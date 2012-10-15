@@ -24,9 +24,9 @@ volatile uint8_t                    anzwertefuermittelwert =4;
 
 #define IMPULSBIT                   4 // gesetzt wenn interrupt. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
-#define ANZAHLWERTE                4
+#define ANZAHLWERTE                 4
 
-#define SPI_BUFSIZE							32
+#define SPI_BUFSIZE						32
 
 #define OSZIPORT		PORTC
 #define OSZIPORTDDR	DDRC
@@ -183,14 +183,14 @@ void InitCurrent(void)
 	// turn on interrupts!
 	EIMSK  |= (1<<INT0);
 */
-   // interrupt on INT0 pin falling edge (sensor triggered)
+   // interrupt on INT1 pin falling edge 
 	EICRA = (1<<ISC11) | (0<<ISC10);
 	// turn on interrupts!
 	EIMSK  |= (1<<INT1);
 
 
 	lcd_gotoxy(0,0);
-	lcd_puts("C0 Ini\0");
+	lcd_puts("I1 Ini\0");
    
 	sei(); // Enable global interrupts
    

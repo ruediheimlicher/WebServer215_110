@@ -727,7 +727,7 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
 			{
 				if (find_key_val(str,actionbuf,10,"tst"))
 				{
-					return(1);
+					return(16);
 				}
 			}
 		}
@@ -964,8 +964,8 @@ void master_init(void)
 	
 //  DDRD &=~(1<<INT0PIN); //Pin 2 von Port D als Eingang fuer Interrupt Impuls
 //	PORTD |=(1<<INT0PIN); //HI
-   DDRD &=~(1<<INT1PIN); //Pin 3 von Port D als Eingang fuer Interrupt Impuls
-	PORTD |=(1<<INT1PIN); //HI
+//   DDRD &=~(1<<INT1PIN); //Pin 3 von Port D als Eingang fuer Interrupt Impuls
+//	PORTD |=(1<<INT1PIN); //HI
 
     
 	DDRD &= ~(1<<MASTERCONTROLPIN); // Pin 4 von PORT D als Eingang fuer MasterControl
@@ -1047,33 +1047,7 @@ int main(void)
 	//uint16_t Tastenprellen=0x0fff;
 	uint16_t loopcount0=0;
 	uint16_t loopcount1=0;
-	//	Zaehler fuer Wartezeit nach dem Start
-	//uint16_t startdelay0=0x001F;
-	//uint16_t startdelay1=0;
-	
-	//Zaehler fuer Zeit von (SDA || SCL = LO)
-	//uint16_t twi_LO_count0=0;
-	//uint16_t twi_LO_count1=0;
-	
-	//Zaehler fuer Zeit von (SDA && SCL = HI)
-	//uint16_t twi_HI_count0=0;
-   
-	/*
-	 eepromWDT_Count0: Zaehler der wdt-Resets mit restart.
-	 
-	 Neu:
-	 Wenn ein wdt-Reset abläuft, wird Bit 7 in eepromWDT_Count0 gesetzt.
-	 Dadurch wartet der Prozessor mit dem Initialisieren des TWI-Slave, bis eine neue Startbedingung erscheint.
-	 Anschliessend wird das Bit 7 wieder zurückgesetzt.
-	 
-	 alt:
-	 eepromWDT_Count1: Zaehler fuer neuen wdt-Reset. Wenn wdt anspricht, wird der Zaheler erhoeht.
-	 Beim Restart wird bei anhaltendem LO auf SDA oder SCL gewartet.
-	 Wenn SCL und SDA beide HI sind, wird der Zaehler auf den Wert von eepromWDT_Count0 gesetzt
-	 und der TWI-Slave gestartet.
-	 
-	 */
-	//uint8_t StartStatus=0x00; //	Status des Slave
+
    // ETH
 	//uint16_t plen;
 	uint8_t i=0;
@@ -1088,11 +1062,6 @@ int main(void)
 	CLKPR=0; // "no pre-scaler"
 	delay_ms(1);
 	
-	/* enable PD2/INT0, as input */
-	
-	//DDRD&= ~(1<<DDD2);				// INT0 als Eingang
-	
-	
 	i=1;
 	//	WDT_off();
 	//init the ethernet/ip layer:
@@ -1104,7 +1073,7 @@ int main(void)
 	
 	lcdinit();
 	lcd_puts("Guten Tag \0");
-	lcd_gotoxy(12,0);
+	lcd_gotoxy(10,0);
 	lcd_puts("V:\0");
 	lcd_puts(VERSION);
    /*
@@ -1165,9 +1134,6 @@ int main(void)
 	register_ping_rec_callback(&ping_callback);
 	
     
-   //end SPI
-   
-   
 	timer0();
    
    //
@@ -1195,9 +1161,6 @@ int main(void)
 		if (loopcount0>=0x2FFF)
 		{
 			loopcount0=0;
-			// *** SPI senden
-			//waitspi();
-			//StartTransfer(loopcount1,1);
 			
 			if (loopcount1 >= 0x00FF)
 			{
@@ -1213,10 +1176,21 @@ int main(void)
 				loopcount1++;
 				
 			}
-			if (LOOPLEDPORTPIN &(1<<LOOPLED))
+			//if (LOOPLEDPORTPIN &(1<<LOOPLED))
+         /*
+			if (loopcount1%2==0)
 			{
 				sec++;
+            lcd_gotoxy(19,1);
+            lcd_putc('*');
 			}
+         else
+         {
+            lcd_gotoxy(19,1);
+            lcd_putc('+');
+            
+         }
+         */
 			LOOPLEDPORT ^=(1<<LOOPLED);
 			
 		}
@@ -1239,7 +1213,9 @@ int main(void)
          //lcd_putint(currentstatus);
          //lcd_gotoxy(4,1);
          //lcd_putint(currentstatus & 0x0F);
-         
+         //lcd_gotoxy(19,0);
+         //lcd_putc('x');
+
          
          if ((currentstatus & 0x0C) == ANZAHLWERTE)   // genuegend Werte
          {
@@ -1288,7 +1264,7 @@ int main(void)
             
             wattstunden = impulscount/10;
             
-             
+            
             //lcd_putint(wattstunden/1000);
             //lcd_putc('.');
             //lcd_putint3(wattstunden);
@@ -1296,13 +1272,13 @@ int main(void)
             //lcd_putc(':');
             
             /*
-            dtostrf(leistung,6,0,stromstring);
-            lcd_putc('*');
-            lcd_puts(stromstring);
-            lcd_putc('*');
-            //lcd_putc(' ');
-            //lcd_putint16(leistung);
-            lcd_putc(' ');
+             dtostrf(leistung,6,0,stromstring);
+             lcd_putc('*');
+             lcd_puts(stromstring);
+             lcd_putc('*');
+             //lcd_putc(' ');
+             //lcd_putint16(leistung);
+             lcd_putc(' ');
              */
             /*
              if (abs(leistung-lastleistung) > 10)
@@ -1328,11 +1304,11 @@ int main(void)
             
             if (paketcounter %4 ==0)
             {
-            lcd_gotoxy(0,0);
-            lcd_putint(messungcounter);
-            lcd_putc(' ');
-            lcd_putint(paketcounter);
-            lcd_putc('*');
+               lcd_gotoxy(0,1);
+               lcd_putint(messungcounter);
+               lcd_putc(' ');
+               lcd_putint(paketcounter);
+               lcd_putc('*');
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
@@ -1451,6 +1427,9 @@ int main(void)
             }
             if (sendWebCount == 1) // StromDaten an HomeServer schicken
             {
+               //lcd_gotoxy(19,0);
+               //lcd_putc('$');
+               
                //lcd_gotoxy(0,0);
                //lcd_puts(CurrentDataString);
                //lcd_putc('*');
