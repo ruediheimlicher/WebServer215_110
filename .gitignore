@@ -9,7 +9,7 @@ twislave.c
 *.map
 *.o
 *.sym
-*.he
+*.hex
 *.xcodeproj
 Makefile
 build
