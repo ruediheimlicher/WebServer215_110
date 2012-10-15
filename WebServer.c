@@ -152,6 +152,9 @@ volatile uint8_t txstartbuffer;
 static char HeizungDataString[64];
 static char SolarDataString[64];
 static char CurrentDataString[64];
+
+char* teststring[32];
+
 //static char EEPROM_String[96];
 
 //static  char d[4]={};
@@ -217,7 +220,7 @@ float lastleistung =0;
 uint8_t lastcounter=0;
 volatile uint8_t  anzeigewert =0;
 
-char stromstring[10];
+static char stromstring[10];
 
 //volatile uint8_t  paketcounter =0;
 
@@ -1153,9 +1156,11 @@ int main(void)
    static volatile uint8_t messungcounter=0;
    static volatile uint8_t paketcounter=0;
    
+  
+   
 #pragma  mark "while"
 	
-   webstatus |= (1<<DATASEND);
+//   webstatus |= (1<<DATASEND);
    
    while(1)
 	{
@@ -1249,9 +1254,10 @@ int main(void)
             //lcd_puthex(hb);
             //lcd_puthex(lb);
             //                lcd_putc(':');
+            
             //char impstring[12];
-            //dtostrf(impulsmittelwert,10,2,impstring);
-            // lcd_gotoxy(0,1);
+            //dtostrf(impulsmittelwert,8,2,impstring);
+            //lcd_gotoxy(0,0);
             //lcd_puts(impstring);
             //lcd_putc(':');
             //lcd_putint16(impulsmittelwert);
@@ -1279,7 +1285,7 @@ int main(void)
             //lcd_putc('W');
             //lcd_putc(':');
             
-            /*
+            lcd_gotoxy(0,0);
              dtostrf(leistung,6,0,stromstring);
              lcd_putc('*');
              lcd_puts(stromstring);
@@ -1287,7 +1293,7 @@ int main(void)
              //lcd_putc(' ');
              //lcd_putint16(leistung);
              lcd_putc(' ');
-             */
+             
             /*
              if (abs(leistung-lastleistung) > 10)
              {
@@ -1317,7 +1323,7 @@ int main(void)
                lcd_putc(' ');
                lcd_putint(paketcounter);
                lcd_putc('*');
-               webstatus |= (1<<DATASEND);
+               //webstatus |= (1<<DATASEND);
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
@@ -1445,7 +1451,7 @@ int main(void)
                
                start_web_client=2;
                web_client_attempts++;
-               char* teststring = "pw=Pong&strom=360\0";
+               strcat("pw=Pong&strom=360\0",(char*)teststring);
                //strcat(SolarVarString,SolarDataString);
                start_web_client=0;
                
