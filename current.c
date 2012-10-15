@@ -15,19 +15,21 @@ volatile static float               impulsmittelwert=0; // Mittelwertt der Impul
 volatile uint8_t                    currentstatus=0; // Byte fuer Status der Strommessung
 volatile uint8_t                    webstatus =0;     // Byte fuer Ablauf der Messung/Uebertragung
 
+volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Events,
+                                                      // nach denen Daten des Clients gesendet werden sollen
+
 
 extern     volatile uint8_t messungcounter;
 
 // Endwert fuer Compare-Match von Timer2
-#define TIMER2_ENDWERT					125; // 10 us
+#define TIMER2_ENDWERT					0x80 // 128; // 10 us
 
-#define IMPULSBIT                   4 // gesetzt wenn interrupt. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
+#define IMPULSBIT                   4 // gesetzt wenn Interrupt0 eintrifft. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
-#define ANZAHLWERTE                 4
+#define ANZAHLWERTE                 4 // Anzahl Werte fuer Mittelwertbildung
 
-#define ANZAHLPAKETE                4
+#define ANZAHLPAKETE                4 // Anzahl Pakete bis zur Uebertragung
 
-#define SPI_BUFSIZE						32
 
 #define OSZIPORT		PORTC
 #define OSZIPORTDDR	DDRC

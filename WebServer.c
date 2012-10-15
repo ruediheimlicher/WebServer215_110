@@ -22,15 +22,11 @@
 #include <avr/wdt.h>
 #include "lcd.c"
 #include "adc.c"
-//#include "websr.c"
 #include "current.c"
-//#include "web_SPI.c"
 
-//#include "out_slave.c"
 #include "datum.c"
 #include "version.c"
 #include "homedata.c"
-//# include "twimaster.c"
 //***********************************
 //									*
 //									*
@@ -40,8 +36,8 @@
 //***********************************
 
 
-#define SDAPIN		4
-#define SCLPIN		5
+//#define SDAPIN		4
+//#define SCLPIN		5
 
 /*
  #define TASTE1		38
@@ -66,11 +62,8 @@
 
 
 #define STARTDELAYBIT		0
-#define HICOUNTBIT			1
-#define CLIENTBIT			3
 #define WDTBIT				7
 #define TASTATURPIN			0           //	Eingang fuer Tastatur
-#define THERMOMETERPIN		1           //	Eingang fuer Thermometer
 #define RELAISPIN          5           //	Ausgang fuer Reset-Relais
 
 #define MASTERCONTROLPIN	4           // Eingang fuer MasterControl: Meldung MasterReset
@@ -78,9 +71,8 @@
 #define INT0PIN            2           // Pin Int0
 #define INT1PIN            3           // Pin Int1
 
-volatile uint16_t LoopCounter=0;
 
-volatile uint8_t rxdata =0;
+
 volatile uint16_t EventCounter=0;
 static char baseurl[]="http://ruediheimlicher.dyndns.org/";
 
@@ -89,34 +81,6 @@ static char baseurl[]="http://ruediheimlicher.dyndns.org/";
 /* *************************************************************************  */
 /* Eigene Deklarationen                                                       */
 /* *************************************************************************  */
-#define NULLTASK					0xB0	// Nichts tun
-#define ERRTASK					0xA0	// F
-
-#define STATUSTASK				0xB1	// Status des TWI aendern
-#define STATUSCONFIRMTASK		0xB2	// Statusaenderung des TWI bestaetigen
-#define EEPROMREADTASK			0xB8	// von EEPROM lesen
-#define EEPROMSENDTASK			0xB9	// Daten vom HomeServer an HomeCentral senden
-#define EEPROMRECEIVETASK		0xB6	// Adresse fuer EEPROM-Write empfangen
-#define EEPROMWRITETASK			0xB7	// auf EEPROM schreiben
-#define EEPROMCONFIRMTASK		0xB5	// Quittung an HomeCentral senden
-#define EEPROMREPORTTASK		0xB4	// Daten vom EEPROM an HomeServer senden
-
-#define EEPROMREADWOCHEATASK	0xBA
-#define EEPROMREADWOCHEBTASK	0xBB
-
-#define RESETTASK					0xBF	// HomeCentral reseten
-
-#define DATATASK					0xC0	// Normale Loop im Webserver
-#define CURRENTTASK					0xC1	// Daten von solar
-
-#define MASTERERRTASK			0xC7	// Fehlermeldung vom Master senden
-
-
-#define STATUSTIMEOUT			0x0080
-//
-// Eventuell kritische Werte
-#define START_BYTE_DELAY		2				// Timerwert fuer Start-Byte
-#define BYTE_DELAY				2				// Timerwert fuer Data-Byte
 
 volatile uint16_t					timer2_counter=0;
 
@@ -126,30 +90,7 @@ static uint8_t  webtaskflag =0;
 
 static uint8_t monitoredhost[4] = {10,0,0,7};
 
-//#define STR_BUFFER_SIZE 24
-//static char strbuf_A[STR_BUFFER_SIZE+1];
 
-
-#define TAGPLANBREITE		0x40	// 64 Bytes, 2 page im EEPROM
-#define RAUMPLANBREITE		0x200	// 512 Bytes
-#define twi_buffer_size		8
-#define buffer_size			8 
-#define page_size				32
-#define eeprom_buffer_size 8
-
-
-volatile uint8_t	TWI_Pause=1;
-
-
-volatile uint8_t StartDaten;
-
-
-static volatile uint8_t Temperatur;
-/*Der Sendebuffer, der vom Master ausgelesen werden kann.*/
-//volatile uint8_t txbuffer[twi_buffer_size];
-volatile uint8_t txstartbuffer;
-
-static char HeizungDataString[64];
 static char SolarDataString[64];
 static char CurrentDataString[64];
 
@@ -190,9 +131,9 @@ uint16_t Tastencount=0;
 uint16_t Tastenprellen=0x01F;
 
 
-static volatile uint8_t pingnow=1; // 1 means time has run out send a ping now
-static volatile uint8_t resetnow=0; 
-static volatile uint8_t reinitmac=0; 
+//static volatile uint8_t pingnow=1; // 1 means time has run out send a ping now
+//static volatile uint8_t resetnow=0;
+//static volatile uint8_t reinitmac=0;
 //static uint8_t sendping=1; // 1 we send ping (and receive ping), 0 we receive ping only
 static volatile uint8_t pingtimer=1; // > 0 means wd running
 //static uint8_t pinginterval=30; // after how many seconds to send or receive a ping (value range: 2 - 250)
@@ -292,15 +233,8 @@ static uint8_t buf[BUFFER_SIZE+1];
 static uint8_t pingsrcip[4];
 static uint8_t start_web_client=0;
 static uint8_t web_client_attempts=0;
-static uint8_t web_client_sendok=0;
-static volatile uint8_t sec=0;
-static volatile uint8_t cnt2step=0;
+static uint8_t web_client_sendok=0; // Anzahl callbackaufrufe
 
-
-
-#define tag_start_adresse 0
-
-#define lab_data_size 8
 
 
 #define CURRENTSEND                 0     // Bit fuer: Daten an Server senden
@@ -903,7 +837,6 @@ uint16_t print_webpage_status(uint8_t *buf)
 	
 	
 	plen=fill_tcp_data_p(buf,plen,PSTR("<p>Leistung: "));
-	Temperatur=0;
 	
 	//Temperatur=WebRxDaten[2];
 	//Temperatur=inbuffer[2]; // Vorlauf
@@ -1049,7 +982,6 @@ int main(void)
    
 	MCUSR = 0;
 	wdt_disable();
-	Temperatur=0;
 	//SLAVE
 	//uint16_t Tastenprellen=0x0fff;
 	uint16_t loopcount0=0;
@@ -1095,8 +1027,6 @@ int main(void)
 	TWBR =0;
    
    
-	txstartbuffer = 0x00;
-	uint8_t sendWebCount=0;	// Zahler fuer Anzahl TWI-Events, nach denen Daten des Clients gesendet werden sollen
 	
 	//Init_SPI_Master();
 	initOSZI();
@@ -1189,7 +1119,7 @@ int main(void)
          /*
 			if (loopcount1%2==0)
 			{
-				sec++;
+				
             lcd_gotoxy(19,1);
             lcd_putc('*');
 			}
@@ -1434,7 +1364,7 @@ int main(void)
             if ((start_web_client==1)) // In Ping_Calback gesetzt: Ping erhalten
             {
                //OSZILO;
-               sec=0;
+               
                //lcd_gotoxy(0,0);
                //lcd_puts("    \0");
                lcd_gotoxy(12,0);
