@@ -153,7 +153,7 @@ static char HeizungDataString[64];
 static char SolarDataString[64];
 static char CurrentDataString[64];
 
-char* teststring[32];
+static char* teststring = "pw=Pong&strom=360\0";
 
 //static char EEPROM_String[96];
 
@@ -1215,7 +1215,11 @@ int main(void)
 		
       if (currentstatus & (1<<IMPULSBIT)) // neuer Impuls angekommen
       {
-         
+         if (messungcounter == 0)
+         {
+            impulszeitsumme=0;
+         }
+         TCNT0=0;
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
          impulszeitsumme += impulszeit/ANZAHLWERTE;     // Wert aufsummieren
@@ -1228,8 +1232,7 @@ int main(void)
          //lcd_putc('x');
          
          
-//         if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
-         if ((currentstatus & 0x0F) >= 4)   // genuegend Werte
+         if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
          {
             lcd_gotoxy(19,0);
             lcd_putc(' ');
@@ -1323,16 +1326,15 @@ int main(void)
                lcd_putc(' ');
                lcd_putint(paketcounter);
                lcd_putc('*');
-               //webstatus |= (1<<DATASEND);
+ //              webstatus |= (1<<DATASEND);
+               
+            
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
             anzeigewert = leistung/0x81;
             
             //lcd_putint(anzeigewert);
-            
-            
-            
             
             webstatus |= (1<<CURRENTSEND);
             
@@ -1346,9 +1348,6 @@ int main(void)
          
          impulszeit=0;
          currentstatus &= ~(1<<IMPULSBIT);
-         
-         
-         
          
       }
 		//**    End Current-Routinen*************************
@@ -1371,12 +1370,14 @@ int main(void)
 			
          if (webstatus & (1<<CURRENTSEND))
          {
+            lcd_gotoxy(10,0);
+            lcd_puts(CurrentDataString);
+
+            
             char key1[]="pw=";
             char sstr[]="Pong";
             
             
-            strcpy(CurrentDataString,key1);
-            strcat(CurrentDataString,sstr);
             
             strcat(CurrentDataString,"&strom=");
             char webstromstring[10]={};
@@ -1397,9 +1398,14 @@ int main(void)
              */
             
             sendWebCount++;
-            //lcd_gotoxy(0,1);
+            //lcd_gotoxy(10,0);
             //lcd_puts(CurrentDataString);
+            
             webstatus &= ~(1<<CURRENTSEND);
+            
+            //webstatus |= (1<<CURRENTSTOP);
+            
+            
          }
          
 			// **	Beginn Ethernet-Routinen	***********************
@@ -1440,7 +1446,7 @@ int main(void)
                //delay_ms(1000);
                
             }
-            if (sendWebCount == 1) // StromDaten an HomeServer schicken
+            if (sendWebCount == 8) // StromDaten an HomeServer schicken
             {
                //lcd_gotoxy(19,0);
                //lcd_putc('$');
@@ -1451,7 +1457,7 @@ int main(void)
                
                start_web_client=2;
                web_client_attempts++;
-               strcat("pw=Pong&strom=360\0",(char*)teststring);
+               //strcat("pw=Pong&strom=360\0",(char*)teststring);
                //strcat(SolarVarString,SolarDataString);
                start_web_client=0;
                
@@ -1463,7 +1469,10 @@ int main(void)
                
                sendWebCount++;
                
+               
+               
                // Daten senden
+               
                //www_server_reply(buf,dat_p); // send data
                
             }

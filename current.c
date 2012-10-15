@@ -146,12 +146,12 @@ ISR( INT1_vect )
    
    if (webstatus & (1<<CURRENTSTOP)) // Webevent im Gang, Impulse ignorieren
    {
-      lcd_puts("stp\0");
+      //lcd_puts("st\0");
       return;
    }
    else if (webstatus & (1<<CURRENTWAIT)) // Webevent fertig, neue Serie starten
    {
-      //lcd_puts("I0:B\0");
+      //lcd_puts("wt\0");
       anzimpulse=0;
       webstatus &= ~(1<<CURRENTWAIT);
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
