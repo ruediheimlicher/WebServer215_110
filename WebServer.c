@@ -219,7 +219,7 @@ volatile uint8_t  anzeigewert =0;
 
 char stromstring[10];
 
-volatile uint8_t  paketcounter =0;
+//volatile uint8_t  paketcounter =0;
 
 
 void timer0(void);
@@ -1145,12 +1145,12 @@ int main(void)
    InitCurrent();
    timer2();
    
-   uint8_t messungcounter=0;
-   uint8_t paketcounter=0;
+   static volatile uint8_t messungcounter=0;
+   static volatile uint8_t paketcounter=0;
    
 #pragma  mark "while"
 	
-   webstatus |= (1<<DATASEND);
+//   webstatus |= (1<<DATASEND);
    
    while(1)
 	{
@@ -1209,23 +1209,25 @@ int main(void)
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
          impulszeitsumme += impulszeit/ANZAHLWERTE;     // Wert aufsummieren
-         //lcd_gotoxy(0,1);
+         //lcd_gotoxy(10,1);
          //lcd_putint(currentstatus);
          //lcd_gotoxy(4,1);
+         //lcd_putc('*');
          //lcd_putint(currentstatus & 0x0F);
          //lcd_gotoxy(19,0);
          //lcd_putc('x');
-
          
-         if ((currentstatus & 0x0C) == ANZAHLWERTE)   // genuegend Werte
+         
+//         if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
+         if ((currentstatus & 0x0F) >= 4)   // genuegend Werte
          {
             lcd_gotoxy(19,0);
             lcd_putc(' ');
             
             paketcounter++;
-            //lcd_gotoxy(8,1);
+            //lcd_gotoxy(16,1);
             //lcd_putc('m');
-            //lcd_putint(currentstatus); //& 0x07);
+            //lcd_putint(paketcounter); //& 0x07);
             impulsmittelwert = impulszeitsumme;
             impulszeitsumme = 0;
             currentstatus |= 0x00;
@@ -1302,7 +1304,7 @@ int main(void)
              }
              */
             
-            if (paketcounter %4 ==0)
+            if (paketcounter %2 ==0)
             {
                lcd_gotoxy(0,1);
                lcd_putint(messungcounter);
