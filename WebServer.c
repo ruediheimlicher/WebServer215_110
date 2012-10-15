@@ -222,7 +222,6 @@ volatile uint8_t  anzeigewert =0;
 
 static char stromstring[10];
 
-//volatile uint8_t  paketcounter =0;
 
 
 void timer0(void);
@@ -1219,10 +1218,15 @@ int main(void)
          {
             impulszeitsumme=0;
          }
-         TCNT0=0;
+         else
+         {
+            
+         }
+         
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
          impulszeitsumme += impulszeit/ANZAHLWERTE;     // Wert aufsummieren
+            
          //lcd_gotoxy(10,1);
          //lcd_putint(currentstatus);
          //lcd_gotoxy(4,1);
@@ -1236,7 +1240,9 @@ int main(void)
          {
             lcd_gotoxy(19,0);
             lcd_putc(' ');
-            
+            lcd_gotoxy(0,1);
+            lcd_putint(messungcounter);
+
             paketcounter++;
             //lcd_gotoxy(16,1);
             //lcd_putc('m');
@@ -1319,15 +1325,16 @@ int main(void)
              }
              */
             
-            if (paketcounter %2 ==0)
+            if (paketcounter  >= ANZAHLPAKETE)
             {
-               lcd_gotoxy(0,1);
-               lcd_putint(messungcounter);
-               lcd_putc(' ');
+               //lcd_gotoxy(0,1);
+               //lcd_putint(messungcounter);
+               //lcd_putc(' ');
+               lcd_gotoxy(4,1);
                lcd_putint(paketcounter);
-               lcd_putc('*');
- //              webstatus |= (1<<DATASEND);
-               
+               //lcd_putc('*');
+ //            webstatus |= (1<<DATASEND);
+               paketcounter=0;
             
             }
             

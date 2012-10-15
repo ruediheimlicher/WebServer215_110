@@ -3,21 +3,20 @@
 // Im Hauptprogramm einfügen:
  
 // current
-//volatile uint16_t                   currentcount0=0;
-volatile static uint32_t             currentcount=0;
-volatile uint16_t                      impulscount=0;
+volatile static uint32_t             currentcount=0;     // Anzahl steps von timer2 zwischen 2 Impulsen. Schritt 10uS
+volatile uint32_t                     impulscount=0;     // Anzahl Impulse vom Stromzaehler fortlaufend
 
 
-volatile static uint32_t            impulszeit=0;
+volatile static uint32_t            impulszeit=0;  // anzahl steps in INT1, wird nach div durch ANZAHLWERTE zu impulszeitsumme addiert.uebernommen
 volatile static float               impulszeitsumme=0;
-volatile static float               impulsmittelwert=0;
+volatile static float               impulsmittelwert=0; // Mittelwertt der Impulszeiten in einem Messintervall
 
 
-volatile uint8_t                    currentstatus=0;
-volatile uint8_t                    webstatus =0;
-volatile uint8_t                    anzimpulse =0;
-volatile uint8_t                    anzwertefuermittelwert =4;
+volatile uint8_t                    currentstatus=0; // Byte fuer Status der Strommessung
+volatile uint8_t                    webstatus =0;     // Byte fuer Ablauf der Messung/Uebertragung
 
+
+extern     volatile uint8_t messungcounter;
 
 // Endwert fuer Compare-Match von Timer2
 #define TIMER2_ENDWERT					125; // 10 us
@@ -25,6 +24,8 @@ volatile uint8_t                    anzwertefuermittelwert =4;
 #define IMPULSBIT                   4 // gesetzt wenn interrupt. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
 #define ANZAHLWERTE                 4
+
+#define ANZAHLPAKETE                4
 
 #define SPI_BUFSIZE						32
 
@@ -68,7 +69,7 @@ void timer2(void)
 	//lcd_puts("Tim2 ini\0");
    PRR&=~(1<<PRTIM2); // write power reduction register to zero
   
-   TIMSK2 |= (1<<OCIE2A);                 // CTC Interrupt En
+   TIMSK2 |= (1<<OCIE2A);                 // CTC Interrupt Enable
 
    TCCR2A |= (1<<WGM21);                  // Toggle OC2A
     
@@ -152,20 +153,22 @@ ISR( INT1_vect )
    else if (webstatus & (1<<CURRENTWAIT)) // Webevent fertig, neue Serie starten
    {
       //lcd_puts("wt\0");
-      anzimpulse=0;
       webstatus &= ~(1<<CURRENTWAIT);
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
       return;
    }
    
-   impulscount++;
+   
+   impulscount++; // Gesamtzahl der Impulse
+   
    currentstatus |= (1<< IMPULSBIT); // Bit bearbeiten in WebServer
+   
    {
-      OSZILO;
+      //OSZILO;
       impulszeit = currentcount;
       currentcount =0;
       
-      PORTB ^= (1<<IMPULSPIN);
+      //PORTB ^= (1<<IMPULSPIN);
    }
    
 }	// ISR
