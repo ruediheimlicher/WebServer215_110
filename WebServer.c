@@ -281,6 +281,29 @@ void str_cat(char *ziel,char *quelle)
 }
 
 
+// http://stackoverflow.com/questions/122616/how-do-i-trim-leading-trailing-whitespace-in-a-standard-way
+char *trimwhitespace(char *str)
+{
+   char *end;
+   
+   // Trim leading space
+   while(isspace(*str)) str++;
+   
+   if(*str == 0)  // All spaces?
+      return str;
+   
+   // Trim trailing space
+   end = str + strlen(str) - 1;
+   while(end > str && isspace(*end)) end--;
+   
+   // Write new null terminator
+   *(end+1) = 0;
+   
+   return str;
+}
+
+
+
 void timer0()
 {
 	//----------------------------------------------------
@@ -1262,10 +1285,30 @@ int main(void)
                //lcd_gotoxy(0,1);
                //lcd_putint(messungcounter);
                //lcd_putc(' ');
+               
+               // stromstring bilden
+               char key1[]="pw=";
+               char sstr[]="Pong";
+               
+               strcpy(CurrentDataString,key1);
+               strcat(CurrentDataString,sstr);
+                              
+               strcat(CurrentDataString,"&strom=");
+               char webstromstring[10]={};
+               urlencode(stromstring,webstromstring);
+               
+               char* tempstromstring = (char*)trimwhitespace(webstromstring);
+               //strcat(CurrentDataString,stromstring);
+               strcat(CurrentDataString,tempstromstring);
+               
+               
+               // senden aktivieren
                lcd_gotoxy(6,1);
                lcd_putc('>');
                webstatus |= (1<<DATASEND);
+               
                paketcounter=0;
+               sendWebCount = 2;
             
             }
             
@@ -1274,7 +1317,7 @@ int main(void)
             
             //lcd_putint(anzeigewert);
             
-            webstatus |= (1<<CURRENTSEND);
+ //           webstatus |= (1<<CURRENTSEND);
             
          } // genuegend Werte
          else
@@ -1306,46 +1349,7 @@ int main(void)
 		{
 #pragma mark packetloop
 			
-         if (webstatus & (1<<CURRENTSEND))
-         {
-            //lcd_gotoxy(10,0);
-            //lcd_puts(CurrentDataString);
-
-            
-            char key1[]="pw=";
-            char sstr[]="Pong";
-            
-            
-            
-            strcat(CurrentDataString,"&strom=");
-            char webstromstring[10]={};
-            urlencode(stromstring,webstromstring);
-            //strcat(CurrentDataString,stromstring);
-            strcat(CurrentDataString,webstromstring);
-            
-            /*
-             char d[5]={};
-             //char dd[4]={};
-             strcat(CurrentDataString,"&c0=");
-             itoa(hb++,d,16);
-             strcat(CurrentDataString,d);
-             
-             strcat(CurrentDataString,"&c1=");
-             itoa(lb++,d,16);
-             strcat(CurrentDataString,d);
-             */
-            
-            sendWebCount++;
-            //lcd_gotoxy(10,0);
-            //lcd_puts(CurrentDataString);
-            
-            webstatus &= ~(1<<CURRENTSEND);
-            
- //           webstatus |= (1<<CURRENTSTOP);
-            
-            
-         }
-         
+          
 			// **	Beginn Ethernet-Routinen	***********************
 			
 			// handle ping and wait for a tcp packet
@@ -1392,6 +1396,7 @@ int main(void)
                //lcd_gotoxy(0,0);
                //lcd_puts(CurrentDataString);
                //lcd_putc('*');
+               
                
                start_web_client=2;
                web_client_attempts++;
