@@ -391,7 +391,6 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
       sei();
       
-      
       web_client_sendok++;
       //				sei();
       
@@ -1306,6 +1305,7 @@ int main(void)
                lcd_gotoxy(6,1);
                lcd_putc('>');
                webstatus |= (1<<DATASEND);
+               webstatus |= (1<<DATAOK);
                
                paketcounter=0;
                sendWebCount = 2;
@@ -1389,8 +1389,8 @@ int main(void)
                
             }
             
-           if (sendWebCount == 2) // StromDaten an HomeServer schicken
-           // if (webstatus & (1<<DATASEND))
+           //if (sendWebCount == 2) // StromDaten an HomeServer schicken
+           if (webstatus & (1<<DATAOK))
             {
                lcd_gotoxy(18,0);
                lcd_putc('$');
@@ -1408,13 +1408,13 @@ int main(void)
                
                // Daten an strom.pl schicken
                
-               //client_browse_url(PSTR("/cgi-bin/strom.pl?"),CurrentDataString,PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
+               client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),CurrentDataString,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
                
-               client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),teststring,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
+               //client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),teststring,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
                
                sendWebCount++;
                
-              // webstatus &= ~(1<<DATASEND);
+               webstatus &= ~(1<<DATAOK);
                
                
                // Daten senden
