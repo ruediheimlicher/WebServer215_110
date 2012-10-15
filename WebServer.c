@@ -427,6 +427,11 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
 
       
       // Messungen wieder starten
+      
+      
+      
+      
+      
       webstatus &= ~(1<<CURRENTSTOP);
       webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
       sei();
@@ -1150,7 +1155,7 @@ int main(void)
    
 #pragma  mark "while"
 	
-//   webstatus |= (1<<DATASEND);
+   webstatus |= (1<<DATASEND);
    
    while(1)
 	{
@@ -1230,8 +1235,9 @@ int main(void)
             //lcd_putint(paketcounter); //& 0x07);
             impulsmittelwert = impulszeitsumme;
             impulszeitsumme = 0;
-            currentstatus |= 0x00;
-            currentstatus = 0x00;
+            
+            currentstatus &= 0xF0; // Bit 0-3 reset
+            
             
             //uint8_t lb= impulsmittelwert & 0xFF;
             //uint8_t hb = (impulsmittelwert>>8) & 0xFF;
@@ -1311,6 +1317,7 @@ int main(void)
                lcd_putc(' ');
                lcd_putint(paketcounter);
                lcd_putc('*');
+               webstatus |= (1<<DATASEND);
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
