@@ -364,10 +364,6 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       
       // Messungen wieder starten
       
-      
-      
-      
-      
       webstatus &= ~(1<<CURRENTSTOP);
       webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
       sei();
@@ -1168,8 +1164,12 @@ int main(void)
          
          if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
          {
-            lcd_gotoxy(19,0);
+            lcd_gotoxy(18,0);
             lcd_putc(' ');
+            lcd_putc(' ');
+            lcd_gotoxy(6,1);
+            lcd_putc(' ');
+
             lcd_gotoxy(0,1);
             lcd_putint(messungcounter);
 
@@ -1254,16 +1254,17 @@ int main(void)
              lastcounter=0;
              }
              */
-            
+            lcd_gotoxy(4,1);
+            lcd_putint2(paketcounter);
+           
             if (paketcounter  >= ANZAHLPAKETE)
             {
                //lcd_gotoxy(0,1);
                //lcd_putint(messungcounter);
                //lcd_putc(' ');
-               lcd_gotoxy(4,1);
-               lcd_putint(paketcounter);
-               //lcd_putc('*');
- //            webstatus |= (1<<DATASEND);
+               lcd_gotoxy(6,1);
+               lcd_putc('>');
+               webstatus |= (1<<DATASEND);
                paketcounter=0;
             
             }
@@ -1291,7 +1292,7 @@ int main(void)
 		
 		
 		
-		if (sendWebCount >8)
+		if (sendWebCount >2)
 		{
 			//start_web_client=1;
 			sendWebCount=0;
@@ -1307,8 +1308,8 @@ int main(void)
 			
          if (webstatus & (1<<CURRENTSEND))
          {
-            lcd_gotoxy(10,0);
-            lcd_puts(CurrentDataString);
+            //lcd_gotoxy(10,0);
+            //lcd_puts(CurrentDataString);
 
             
             char key1[]="pw=";
@@ -1340,7 +1341,7 @@ int main(void)
             
             webstatus &= ~(1<<CURRENTSEND);
             
-            //webstatus |= (1<<CURRENTSTOP);
+ //           webstatus |= (1<<CURRENTSTOP);
             
             
          }
@@ -1383,10 +1384,10 @@ int main(void)
                //delay_ms(1000);
                
             }
-            if (sendWebCount == 8) // StromDaten an HomeServer schicken
+            if (sendWebCount == 2) // StromDaten an HomeServer schicken
             {
-               //lcd_gotoxy(19,0);
-               //lcd_putc('$');
+               lcd_gotoxy(18,0);
+               lcd_putc('$');
                
                //lcd_gotoxy(0,0);
                //lcd_puts(CurrentDataString);
