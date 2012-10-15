@@ -24,7 +24,7 @@
 #include "adc.c"
 //#include "websr.c"
 #include "current.c"
-#include "web_SPI.c"
+//#include "web_SPI.c"
 
 //#include "out_slave.c"
 #include "datum.c"
@@ -756,36 +756,7 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
 				//OSZILO;
 				if (find_key_val(str,actionbuf,10,"status"))		// Status soll umgeschaltet werden
 				{
-					
-					webtaskflag =STATUSTASK;							// Task setzen
-                    
-					out_startdaten=STATUSTASK; // B1
-                    
-					//lcd_gotoxy(6,0);
-					//lcd_puts(actionbuf);
-					outbuffer[0]=atoi(actionbuf);
-					out_lbdaten=0x00;
-					out_lbdaten=0x00;
-                    
-					if (actionbuf[0]=='0') // twi aus
-					{
-                        
-						//WebTxDaten[1]='0';
-						outbuffer[1]=0;
-						out_hbdaten=0x00;
-						out_lbdaten=0x00;
-						return (2);
-					}
-					if (actionbuf[0]=='1') // twi ein
-					{
-                        
-						//WebTxDaten[1]='0';
-						outbuffer[1]=1;
-						out_hbdaten=0x01;
-						out_lbdaten=0x00;
-						return (3);				// Status da, sendet Bestaetigung an Homeserver
-					}
-                    
+               return 1;
 				}//st
 				
 				
@@ -796,91 +767,7 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
 				
 				if (find_key_val(str,actionbuf,10,"wadr"))			// EEPROM-Daten werden von Homeserver gesendet
 				{
-					//webspistatus |= (1<< TWI_WAIT_BIT);				// Daten nicht an HomeCentral senden
-                    
-					// Nur erste Stelle der EEPROM-Adresse, default 0xA0 wird im Master zugefuegt
-					//WebTxDaten[0]=atoi(actionbuf);
-					outbuffer[0]=atoi(actionbuf);
-					
-					//				lcd_gotoxy(17,1);
-					//				lcd_puthex(txbuffer[0]);
-					//				lcd_gotoxy(17,2);
-					//				lcd_puts(actionbuf);
-					
-					uint8_t dataOK=0;
-					webtaskflag = EEPROMRECEIVETASK; // B6
-                    
-					//out_startdaten=EEPROMRECEIVETASK;
-					
-					aktuelleDatenbreite = buffer_size;
-					
-					if (find_key_val(str,actionbuf,10,"hbyte"))		//hbyte der Adresse
-					{
-						dataOK ++;
-						//strcpy((char*)hbyte,actionbuf);
-						//outbuffer[1]=atoi(actionbuf);
-						out_hbdaten=atoi(actionbuf);
-					}
-					
-					if (find_key_val(str,actionbuf,10,"lbyte"))		// lbyte der Adresse
-					{
-						dataOK ++;
-						//strcpy((char*)lbyte,actionbuf);
-						//outbuffer[2]=atoi(actionbuf);
-						out_lbdaten=atoi(actionbuf);
-					}
-					
-					if (find_key_val(str,actionbuf,28,"data"))		// Datenstring mit '+' - Trennzeichen
-					{
-						//lcd_gotoxy(0,0);
-						//lcd_puthex(strlen(actionbuf));
-						//lcd_putc(' ');
-						//lcd_puts(actionbuf);
-						//lcd_puts("    \0");
-						//lcd_gotoxy(14,1);
-						//lcd_putc('A');
-						
-						webtaskflag = EEPROMWRITETASK;					// Task setzen
-						//EEPROMTxStartDaten=webtaskflag;
-						
-						out_startdaten=EEPROMWRITETASK;
-						
-						// Test
-						/*
-                         EEPROMTxDaten[1]=1;
-                         EEPROMTxDaten[2]=2;
-                         EEPROMTxDaten[3]=3;
-                         */
-						//lcd_putc('B');
-						
-						dataOK ++;
-						char* buffer= malloc(32);
-						//lcd_putc('C');
-						
-						strcpy(buffer, actionbuf);
-						
-						//lcd_putc('D');
-						
-						uint8_t index=0;
-						char* linePtr = malloc(32);
-						
-						linePtr = strtok(buffer,"+");
-						
-						while (linePtr !=NULL)								// Datenstring: Bei '+' trennen
-						{
-							//EEPROMTxDaten[index++] = strtol(linePtr,NULL,16); //http://www.mkssoftware.com/docs/man3/strtol.3.asp
-							outbuffer[index++] = strtol(linePtr,NULL,16); //http://www.mkssoftware.com/docs/man3/strtol.3.asp
-							linePtr = strtok(NULL,"+");
-						}
-						free(linePtr);
-						free(buffer);
-					} // if data
-					
-                    //				if (dataOK==2) // alle Daten da
-					{
-						
 						return (9);												// Empfang bestätigen
-					}
 				} // wadr
 				
 				if (find_key_val(str,actionbuf,10,"iswriteok"))		// Anfrage ob writeok
@@ -891,8 +778,6 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
                 
 				if (find_key_val(str,actionbuf,12,"isstat0ok"))		// Anfrage ob statusok isstat0ok
 				{
-					lcd_gotoxy(7,0);
-					lcd_putc('*');
 					return (10);
 				}
 				
@@ -1086,7 +971,6 @@ void master_init(void)
 	DDRD &= ~(1<<MASTERCONTROLPIN); // Pin 4 von PORT D als Eingang fuer MasterControl
 	PORTD |= (1<<MASTERCONTROLPIN);	// HI
 	
-	pendenzstatus=0;
    
    DDRD |= (1<<PORTB3);
 	
@@ -1237,7 +1121,6 @@ int main(void)
    
 	txstartbuffer = 0x00;
 	uint8_t sendWebCount=0;	// Zahler fuer Anzahl TWI-Events, nach denen Daten des Clients gesendet werden sollen
-	webspistatus=0;
 	
 	//Init_SPI_Master();
 	initOSZI();
@@ -1281,12 +1164,7 @@ int main(void)
 	client_set_wwwip(websrvip);
 	register_ping_rec_callback(&ping_callback);
 	
-   //		SPI
-   for (i=0;i<out_BUFSIZE;i++)
-	{
-      outbuffer[i]='-';
-	}
-   
+    
    //end SPI
    
    
