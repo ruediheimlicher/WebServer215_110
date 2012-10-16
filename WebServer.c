@@ -57,7 +57,7 @@
 #define	LOOPLEDPORT		PORTB
 #define	LOOPLEDPORTPIN	DDRB
 #define	LOOPLED			1
-#define	TWIPIN			0
+#define	SENDLED			0
 
 
 
@@ -232,7 +232,6 @@ static char urlvarstr[21];
 static uint8_t buf[BUFFER_SIZE+1];
 static uint8_t pingsrcip[4];
 static uint8_t start_web_client=0;
-static uint8_t web_client_attempts=0;
 static uint8_t web_client_sendok=0; // Anzahl callbackaufrufe
 
 
@@ -304,7 +303,7 @@ char *trimwhitespace(char *str)
 
 
 
-void timer0()
+void timer0() // Analoganzeige
 {
 	//----------------------------------------------------
 	// Set up timer 0 
@@ -385,6 +384,7 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       lcd_putc('+');
 
       webstatus &= ~(1<<DATASEND);
+      
       // Messungen wieder starten
       
       webstatus &= ~(1<<CURRENTSTOP);
@@ -392,7 +392,7 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       sei();
       
       web_client_sendok++;
-      //				sei();
+      
       
    }
    else
@@ -772,66 +772,6 @@ uint16_t print_webpage_ok(uint8_t *buf,uint8_t *okcode)
 
 
 
-uint16_t print_webpage_confirm(uint8_t *buf)
-{
-	uint16_t plen;
-	plen=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nPragma: no-cache\r\n\r\n"));
-	plen=fill_tcp_data_p(buf,plen,PSTR("<h2>Bearbeiten</h2><p>Passwort OK.</p>\n"));
-	
-	//
-	/*
-     plen=fill_tcp_data_p(buf,plen,PSTR("<form action=/ram method=get>"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=gto value=0 checked> Heizung <br></p>\n"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=gto value=1> Werkstatt<br></p>\n"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=gto value=3> Buero<br></p>\n"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=gto value=4> Labor<br></p><input type=submit value=\"Gehen\"></form>\n"));
-     */
-	
-	plen=fill_tcp_data_p(buf,plen,PSTR("<form action=/cde method=get>"));										// Code fuer Tagbalken eingeben
-	plen=fill_tcp_data_p(buf,plen,PSTR("<p>Raum: <input type=text name=raum size=2><br>"));				// Raum
-	plen=fill_tcp_data_p(buf,plen,PSTR("Wochentag: <input type=text name=wochentag  size=2><br>"));		// Wochentag
-	plen=fill_tcp_data_p(buf,plen,PSTR("Objekt: <input type=text name=objekt  size=2><br>"));				// Objekt
-	plen=fill_tcp_data_p(buf,plen,PSTR("Stunde: <input type=text name=stunde  size=2><br>"));				// Stunde
-	plen=fill_tcp_data_p(buf,plen,PSTR("<input type=submit value=\"Lesen\"></p>"));
-	
-	/*
-     plen=fill_tcp_data_p(buf,plen,PSTR("<p><input type=radio name=std value=0 checked> OFF <br>"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<input type=radio name=std value=2> erste halbe Stunde<br>"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<input type=radio name=std value=1> zweite halbe Stunde<br>"));
-     plen=fill_tcp_data_p(buf,plen,PSTR("<input type=radio name=std value=3> ganze Stunde<br></p>"));
-     */	
-    
-	plen=fill_tcp_data_p(buf,plen,PSTR("Stunde: <input type=text name=code  size=2><br>"));				// code
-    
-	plen=fill_tcp_data_p(buf,plen,PSTR("<input type=submit value=\"Setzen\"></form>"));
-    
-	
-	
-	
-	plen=fill_tcp_data_p(buf,plen,PSTR("<form action=/twi method=get>"));
-	plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=hidden name=pw value=\"ideur00\"></p>"));
-	if (PIND & (1<<TWIPIN)) // TWI ist ON
-	{
-		plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=status value=0> OFF<br></p>\n")); // st: Statusflag
-		plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=status value=1 checked> ON <br></p>\n"));
-		
-	}
-	else
-	{
-		plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=status value=0 checked> OFF<br></p>\n"));
-		plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=status value=1> ON <br></p>\n"));
-		
-	}
-	//	plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=hidden name=pw value=\"ideur00\"><input type=radio name=st value=0> OFF<br></p>\n"));
-	//	plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=radio name=st value=1 checked> ON <br></p>\n"));
-	plen=fill_tcp_data_p(buf,plen,PSTR("<p>\n<input type=submit value=\"OK\"></form>\n"));
-	
-	//
-	plen=fill_tcp_data_p(buf,plen,PSTR("<a href=\"/\">&lt;&lt;zur&uuml;ck zu Status</a></p>\n"));
-	
-	
-	return(plen);
-}
 
 #pragma mark Webpage_status
 
@@ -1100,7 +1040,7 @@ int main(void)
    InitCurrent();
    timer2();
    
-   static volatile uint8_t messungcounter=0;
+ //  static volatile uint8_t messungcounter=0;
    static volatile uint8_t paketcounter=0;
    
   
@@ -1108,23 +1048,22 @@ int main(void)
 #pragma  mark "while"
 	
 //   webstatus |= (1<<DATASEND);
-   
+   sei();
    while(1)
 	{
 		sei();
 		//Blinkanzeige
-      
 		loopcount0++;
 		if (loopcount0>=0x2FFF)
 		{
 			loopcount0=0;
 			
-			if (loopcount1 >= 0x00FF)
+			if (loopcount1 >= 0x000F)
 			{
 				
 				loopcount1 = 0;
 				//OSZITOGG;
-				//LOOPLEDPORT |= (1<<TWILED);           // TWILED setzen, Warnung
+				//LOOPLEDPORT ^= (1<<SENDLED);           // TWILED setzen, Warnung
 				//TWBR=0;
 				//lcdinit();
 			}
@@ -1137,7 +1076,6 @@ int main(void)
          /*
 			if (loopcount1%2==0)
 			{
-				
             lcd_gotoxy(19,1);
             lcd_putc('*');
 			}
@@ -1145,11 +1083,9 @@ int main(void)
          {
             lcd_gotoxy(19,1);
             lcd_putc('+');
-            
          }
          */
 			LOOPLEDPORT ^=(1<<LOOPLED);
-			
 		}
 		
 		//**	Beginn Start-Routinen Webserver	***********************
@@ -1162,9 +1098,14 @@ int main(void)
 		
       if (currentstatus & (1<<IMPULSBIT)) // neuer Impuls angekommen
       {
+         // Versuche, erste Messung zu verbessern
          if (messungcounter == 0)
          {
-            impulszeitsumme=0;
+            //impulsmittelwert=0; // nutzlos
+            //impulszeitsumme=0; // nutzlos
+            // currentstatus &= 0xF0; // Bit 0-3 reset hier nutzlos
+            //paketcounter =0; // nutzlos
+            
          }
          else
          {
@@ -1247,13 +1188,13 @@ int main(void)
             //lcd_putc(':');
             
             lcd_gotoxy(0,0);
-             dtostrf(leistung,6,0,stromstring);
-             lcd_putc('*');
+             dtostrf(leistung,5,0,stromstring);
+             //lcd_putc('*');
              lcd_puts(stromstring);
              lcd_putc('*');
              //lcd_putc(' ');
              //lcd_putint16(leistung);
-             lcd_putc(' ');
+             //lcd_putc(' ');
              
             /*
              if (abs(leistung-lastleistung) > 10)
@@ -1300,16 +1241,18 @@ int main(void)
                //strcat(CurrentDataString,stromstring);
                strcat(CurrentDataString,tempstromstring);
                
-               
                // senden aktivieren
-               lcd_gotoxy(6,1);
-               lcd_putc('>');
                webstatus |= (1<<DATASEND);
                webstatus |= (1<<DATAOK);
                
+               webstatus |= (1<<CURRENTSTOP);
+               
                paketcounter=0;
-               sendWebCount = 2;
-            
+               //sendWebCount++;
+    //           lcd_gotoxy(6,1);
+    //           lcd_putc('>');
+               
+
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
@@ -1334,21 +1277,16 @@ int main(void)
 		//**    End Current-Routinen*************************
 		
 		
-		
 		if (sendWebCount >2)
 		{
 			//start_web_client=1;
 			sendWebCount=0;
 		}
-		
-      
-		//		sendWebCount=0;
       
       // strom busy?
 		if (webstatus & (1<<DATASEND))
 		{
 #pragma mark packetloop
-			
           
 			// **	Beginn Ethernet-Routinen	***********************
 			
@@ -1377,7 +1315,6 @@ int main(void)
                lcd_clr_line(1);
                delay_ms(100);
                start_web_client=2; // nur erstes ping beantworten. start_web_client wird in pl-send auf 0 gesetzt
-               web_client_attempts++;
                
                mk_net_str(str,pingsrcip,4,'.',10);
                char* pingsstr="ideur01\0";
@@ -1390,21 +1327,18 @@ int main(void)
             }
             
            //if (sendWebCount == 2) // StromDaten an HomeServer schicken
-           if (webstatus & (1<<DATAOK))
+           if (webstatus & (1<<DATAOK) )
             {
-               lcd_gotoxy(18,0);
-               lcd_putc('$');
                
                //lcd_gotoxy(0,0);
                //lcd_puts(CurrentDataString);
                //lcd_putc('*');
                
-               
-               start_web_client=2;
-               web_client_attempts++;
+              // start_web_client=2;
                //strcat("pw=Pong&strom=360\0",(char*)teststring);
-               //strcat(SolarVarString,SolarDataString);
-               start_web_client=0;
+
+               
+               start_web_client=0; // ping wieder ermoeglichen
                
                // Daten an strom.pl schicken
                
@@ -1414,16 +1348,15 @@ int main(void)
                
                sendWebCount++;
                
-               webstatus &= ~(1<<DATAOK);
+               webstatus &= ~(1<<DATAOK); // client_browse nur einmal
                
-               
+               lcd_gotoxy(18,0);
+               lcd_putc('$');
+
                // Daten senden
-               
                //www_server_reply(buf,dat_p); // send data
                
             }
-            
-            
             continue;
          } // dat_p=0
 			
@@ -1460,7 +1393,7 @@ int main(void)
 			{
 				// Teil der URL mit Form xyz?uv=... analysieren
 				
-#pragma mark cmd
+                                                                                 #pragma mark cmd
 				
 				//out_startdaten=DATATASK;	// default
 				
@@ -1473,11 +1406,11 @@ int main(void)
 				//lcd_putc(' ');
 				if (cmd == 1)
 				{
-					dat_p = print_webpage_confirm(buf);
+					//dat_p = print_webpage_confirm(buf);
 				}
 				else if (cmd == 2)	// TWI > OFF
 				{
-#pragma mark cmd 2
+                                                                                 #pragma mark cmd 2
 				}
 				
 				else

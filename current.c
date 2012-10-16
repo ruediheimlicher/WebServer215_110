@@ -19,10 +19,10 @@ volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Ev
                                                       // nach denen Daten des Clients gesendet werden sollen
 
 
-extern     volatile uint8_t messungcounter;
+volatile uint8_t messungcounter;
 
 // Endwert fuer Compare-Match von Timer2
-#define TIMER2_ENDWERT					0x80 // 128; // 10 us
+#define TIMER2_ENDWERT					 127; // 10 us
 
 #define IMPULSBIT                   4 // gesetzt wenn Interrupt0 eintrifft. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
@@ -65,17 +65,19 @@ extern     volatile uint8_t messungcounter;
  */
 
 // Timer2 fuer Atmega328
-void timer2(void) 
+
+void timer2(void) // Takt fuer Strommessung
 { 
    //lcd_gotoxy(10,1);
 	//lcd_puts("Tim2 ini\0");
+   TCCR2A=0;
    PRR&=~(1<<PRTIM2); // write power reduction register to zero
   
    TIMSK2 |= (1<<OCIE2A);                 // CTC Interrupt Enable
 
    TCCR2A |= (1<<WGM21);                  // Toggle OC2A
     
-   TCCR2A |= (1<<COM2A0);                  // CTC
+   TCCR2A |= (1<<COM2A1);                  // CTC
    
    /*
     CS22	CS21	CS20	Description
@@ -92,20 +94,23 @@ void timer2(void)
    //TCCR2B |= (1<<CS22); // 
    //TCCR2B |= (1<<CS21);//							
 	TCCR2B |= (1<<CS20);
-
-
    
 	TIFR2 |= (1<<TOV2);							//Clear TOV0 Timer/Counter Overflow Flag. clear pending interrupts
 	
    //TIMSK2 |= (1<<TOIE2);						//Overflow Interrupt aktivieren
    TCNT2 = 0;                             //Rücksetzen des Timers
 	//OSZILO;
-   OCR2A = TIMER2_ENDWERT;
-
-    
+   OCR2A = TIMER2_ENDWERT;    
 }
 
 
+
+ISR(TIMER2_COMPA_vect) // CTC Timer2
+{
+   //OSZITOGG;
+   currentcount++; // Zaehlimpuls
+   //PORTB ^= (1<<0);
+}
 
 
 
@@ -130,16 +135,6 @@ ISR (TIMER2_OVF_vect)
 }
 */
 
-ISR(TIMER2_COMPA_vect) // CTC Timer2
-{
-   //OSZITOGG;
-   currentcount++;
-   
-
-}
-
-
-
 
 ISR( INT1_vect )
 {
@@ -150,12 +145,14 @@ ISR( INT1_vect )
    if (webstatus & (1<<CURRENTSTOP)) // Webevent im Gang, Impulse ignorieren
    {
       //lcd_puts("st\0");
-      return;
+     
+      //return;
    }
-   else if (webstatus & (1<<CURRENTWAIT)) // Webevent fertig, neue Serie starten
+   if (webstatus & (1<<CURRENTWAIT)) // Webevent fertig, neue Serie starten
    {
       //lcd_puts("wt\0");
       webstatus &= ~(1<<CURRENTWAIT);
+      
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
       return;
    }
