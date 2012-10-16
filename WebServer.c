@@ -1247,6 +1247,8 @@ int main(void)
                
                webstatus |= (1<<CURRENTSTOP);
                
+               webstatus |= (1<<CURRENTWAIT);
+               
                paketcounter=0;
                //sendWebCount++;
     //           lcd_gotoxy(6,1);

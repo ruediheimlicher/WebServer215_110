@@ -28,7 +28,7 @@ volatile uint8_t messungcounter;
 
 #define ANZAHLWERTE                 4 // Anzahl Werte fuer Mittelwertbildung
 
-#define ANZAHLPAKETE                4 // Anzahl Pakete bis zur Uebertragung
+#define ANZAHLPAKETE                16 // Anzahl Pakete bis zur Uebertragung
 
 
 #define OSZIPORT		PORTC
