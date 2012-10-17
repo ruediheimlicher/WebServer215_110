@@ -26,9 +26,9 @@ volatile uint8_t messungcounter;
 
 #define IMPULSBIT                   4 // gesetzt wenn Interrupt0 eintrifft. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
-#define ANZAHLWERTE                 4 // Anzahl Werte fuer Mittelwertbildung
+#define ANZAHLWERTE                 8 // Anzahl Werte fuer Mittelwertbildung
 
-#define ANZAHLPAKETE                16 // Anzahl Pakete bis zur Uebertragung
+#define ANZAHLPAKETE                4 // Anzahl Pakete bis zur Uebertragung
 
 
 #define OSZIPORT		PORTC
@@ -148,10 +148,15 @@ ISR( INT1_vect )
      
       //return;
    }
+   
+   
    if (webstatus & (1<<CURRENTWAIT)) // Webevent fertig, neue Serie starten
    {
+      //lcd_gotoxy(16,1);
       //lcd_puts("wt\0");
+      
       webstatus &= ~(1<<CURRENTWAIT);
+      
       
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
       return;
@@ -192,7 +197,7 @@ void InitCurrent(void)
 
 
 	lcd_gotoxy(0,0);
-	lcd_puts("I1 Ini\0");
+	lcd_puts("I1\0");
    
 	sei(); // Enable global interrupts
    

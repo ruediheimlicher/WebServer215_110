@@ -241,8 +241,9 @@ static uint8_t web_client_sendok=0; // Anzahl callbackaufrufe
 #define CURRENTWAIT                 2     // Bit fuer: Impulse wieder bearbeiten
 #define CURRENTMESSUNG              3     // Bit fuer: Messen
 #define DATASEND                    4     // Bit fuer: Daten enden
-#define DATAOK                      5
-
+#define DATAOK                      5     // Data kan gesendet weren
+#define DATAPEND                    6     // Senden ist pendent
+#define DATALOOP                    7     // wird von loopcount1 gesetzt, startet senden
 
 
 void str_cpy(char *ziel,char *quelle)
@@ -325,7 +326,7 @@ void timer0() // Analoganzeige
    TCCR0B |= 1<<CS02;
    TCCR0B |= 1<<CS00;
    
-   OCR0A=10;
+   OCR0A=0;
    TIMSK0 |= (1<<OCIE0A);
    
    
@@ -384,6 +385,8 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       lcd_putc('+');
 
       webstatus &= ~(1<<DATASEND);
+      
+      webstatus &= ~(1<<DATAPEND);
       
       // Messungen wieder starten
       
@@ -1049,26 +1052,44 @@ int main(void)
 	
 //   webstatus |= (1<<DATASEND);
    sei();
+   
    while(1)
 	{
 		sei();
 		//Blinkanzeige
 		loopcount0++;
-		if (loopcount0>=0x2FFF)
+		if (loopcount0>=0x4FFF)
 		{
 			loopcount0=0;
+         
+         if (webstatus & (1<<DATAPEND)&& loopcount1 > 6)
+         {
+            webstatus &= ~(1<<DATASEND);
+            //loopcount1=0;
+         }
+         
+         
 			
-			if (loopcount1 >= 0x000F)
+			if (loopcount1 >= 0x0FF)
 			{
 				
 				loopcount1 = 0;
 				//OSZITOGG;
-				//LOOPLEDPORT ^= (1<<SENDLED);           // TWILED setzen, Warnung
-				//TWBR=0;
+				LOOPLEDPORT ^= (1<<SENDLED);           // TWILED setzen, Warnung
+				webstatus |= (1<<DATALOOP);
+            //TWBR=0;
 				//lcdinit();
+            //lcd_gotoxy(16,1);
+            //lcd_putc('l');
+
 			}
 			else
 			{
+            if (loopcount1 == 20)
+            {
+               //lcd_gotoxy(16,1);
+               //lcd_putc(' ');
+            }
 				loopcount1++;
 				
 			}
@@ -1109,8 +1130,36 @@ int main(void)
          }
          else
          {
+         }
+         
+
+         //if((x & 1) == 0)
+         if ((messungcounter & 1)==0)
+         {
+            lcd_gotoxy(0,0);
+            lcd_putc(':');
+
+         }
+         else
+         {
+            lcd_gotoxy(0,0);
+            lcd_putc(' ');
             
          }
+         
+         
+         if (webstatus & (1<<DATAPEND))
+         {
+            lcd_gotoxy(19,1);
+            lcd_putc('p');
+           
+         }
+          else
+          {
+             lcd_gotoxy(19,1);
+             lcd_putc('-');
+             
+          }
          
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
@@ -1130,16 +1179,25 @@ int main(void)
             lcd_gotoxy(18,0);
             lcd_putc(' ');
             lcd_putc(' ');
-            lcd_gotoxy(6,1);
-            lcd_putc(' ');
+            //lcd_gotoxy(6,1);
+            //lcd_putc(' ');
 
+            //lcd_gotoxy(16,1);
+            //lcd_puts("  \0");
             lcd_gotoxy(0,1);
-            lcd_putint(messungcounter);
+            lcd_puts("    \0");
+
+            //lcd_gotoxy(0,1);
+            //lcd_putint(messungcounter);
 
             paketcounter++;
-            //lcd_gotoxy(16,1);
-            //lcd_putc('m');
-            //lcd_putint(paketcounter); //& 0x07);
+            lcd_gotoxy(1,0);
+            lcd_puts("    \0");
+            
+            lcd_gotoxy(1,0);
+            lcd_putint2(paketcounter);
+
+            
             impulsmittelwert = impulszeitsumme;
             impulszeitsumme = 0;
             
@@ -1178,6 +1236,8 @@ int main(void)
             //       leistung = 36000000.0/impulsmittelwert;
             //     Stromzaehler
             
+            
+ 
             wattstunden = impulscount/10;
             
             
@@ -1187,11 +1247,21 @@ int main(void)
             //lcd_putc('W');
             //lcd_putc(':');
             
-            lcd_gotoxy(0,0);
+            
              dtostrf(leistung,5,0,stromstring);
+            
+               lcd_gotoxy(0,1);
+               lcd_putc('L');
+               lcd_putc(':');
+               
+               
+          //  if (paketcounter == 1)
+            {
+               lcd_puts("        \0");
+               lcd_gotoxy(2,1);
+               lcd_puts(stromstring);
+            }
              //lcd_putc('*');
-             lcd_puts(stromstring);
-             lcd_putc('*');
              //lcd_putc(' ');
              //lcd_putint16(leistung);
              //lcd_putc(' ');
@@ -1217,48 +1287,53 @@ int main(void)
              lastcounter=0;
              }
              */
-            lcd_gotoxy(4,1);
-            lcd_putint2(paketcounter);
            
-            if (paketcounter  >= ANZAHLPAKETE)
+           // if (paketcounter  >= ANZAHLPAKETE)
+            if (webstatus & (1<<DATALOOP))
             {
+               webstatus &= ~(1<<DATALOOP);
                //lcd_gotoxy(0,1);
                //lcd_putint(messungcounter);
                //lcd_putc(' ');
                
-               // stromstring bilden
-               char key1[]="pw=";
-               char sstr[]="Pong";
-               
-               strcpy(CurrentDataString,key1);
-               strcat(CurrentDataString,sstr);
-                              
-               strcat(CurrentDataString,"&strom=");
-               char webstromstring[10]={};
-               urlencode(stromstring,webstromstring);
-               
-               char* tempstromstring = (char*)trimwhitespace(webstromstring);
-               //strcat(CurrentDataString,stromstring);
-               strcat(CurrentDataString,tempstromstring);
+               if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
+               {
+                  // stromstring bilden
+                  char key1[]="pw=";
+                  char sstr[]="Pong";
+                  
+                  strcpy(CurrentDataString,key1);
+                  strcat(CurrentDataString,sstr);
+                  
+                  strcat(CurrentDataString,"&strom=");
+                  char webstromstring[10]={};
+                  urlencode(stromstring,webstromstring);
+                  
+                  char* tempstromstring = (char*)trimwhitespace(webstromstring);
+                  //strcat(CurrentDataString,stromstring);
+                  strcat(CurrentDataString,tempstromstring);
+               }
                
                // senden aktivieren
                webstatus |= (1<<DATASEND);
                webstatus |= (1<<DATAOK);
-               
+                
                webstatus |= (1<<CURRENTSTOP);
                
                webstatus |= (1<<CURRENTWAIT);
                
                paketcounter=0;
                //sendWebCount++;
-    //           lcd_gotoxy(6,1);
-    //           lcd_putc('>');
+               //           lcd_gotoxy(6,1);
+               //           lcd_putc('>');
                
-
+               
             }
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
-            anzeigewert = leistung/0x81;
+            
+            //anzeigewert = leistung/0x81;
+            anzeigewert = leistung/0x40;
             
             //lcd_putint(anzeigewert);
             
@@ -1351,6 +1426,7 @@ int main(void)
                sendWebCount++;
                
                webstatus &= ~(1<<DATAOK); // client_browse nur einmal
+               webstatus |= (1<<DATAPEND);
                
                lcd_gotoxy(18,0);
                lcd_putc('$');
@@ -1359,6 +1435,7 @@ int main(void)
                //www_server_reply(buf,dat_p); // send data
                
             }
+            
             continue;
          } // dat_p=0
 			
@@ -1431,8 +1508,8 @@ int main(void)
 			//
          
 		SENDTCP:
-         //     OSZIHI;
-         www_server_reply(buf,dat_p); // send data
+              OSZIHI;
+    //     www_server_reply(buf,dat_p); // send data
 			
 			
 		} // strom not busy
