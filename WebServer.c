@@ -62,9 +62,9 @@
 
 
 #define STARTDELAYBIT		0
-#define WDTBIT				7
+#define WDTBIT             7
 #define TASTATURPIN			0           //	Eingang fuer Tastatur
-#define RELAISPIN          5           //	Ausgang fuer Reset-Relais
+#define ECHOPIN            5           //	Ausgang fuer Impulsanzeige
 
 #define MASTERCONTROLPIN	4           // Eingang fuer MasterControl: Meldung MasterReset
 
@@ -859,8 +859,8 @@ void master_init(void)
 	DDRB |= (1<<PORTB0);	//Bit 1 von PORT B als Ausgang für Kontroll-LED
 	PORTB |= (1<<PORTB0);	//Pull-up
 	
-	DDRD |=(1<<RELAISPIN); //Pin 5 von Port D als Ausgang fuer Reset-Relais
-	PORTD |=(1<<RELAISPIN); //HI
+	DDRD |=(1<<ECHOPIN); //Pin 5 von Port D als Ausgang fuer Impuls-Echo
+	PORTD &= ~(1<<ECHOPIN); //LO
 	// Eventuell: PORTD5 verwenden, Relais auf Platine 
 	
 //  DDRD &=~(1<<INT0PIN); //Pin 2 von Port D als Eingang fuer Interrupt Impuls
@@ -1052,7 +1052,7 @@ int main(void)
 	
 //   webstatus |= (1<<DATASEND);
    sei();
-   
+   lcd_clr_line(0);
    while(1)
 	{
 		sei();
@@ -1119,6 +1119,8 @@ int main(void)
 		
       if (currentstatus & (1<<IMPULSBIT)) // neuer Impuls angekommen
       {
+         PORTD |=(1<<ECHOPIN);
+         /*
          // Versuche, erste Messung zu verbessern
          if (messungcounter == 0)
          {
@@ -1131,23 +1133,11 @@ int main(void)
          else
          {
          }
-         
+         */
 
          //if((x & 1) == 0)
-         if ((messungcounter & 1)==0)
-         {
-            lcd_gotoxy(0,0);
-            lcd_putc(':');
-
-         }
-         else
-         {
-            lcd_gotoxy(0,0);
-            lcd_putc(' ');
-            
-         }
          
-         
+         /*
          if (webstatus & (1<<DATAPEND))
          {
             lcd_gotoxy(19,1);
@@ -1160,6 +1150,24 @@ int main(void)
              lcd_putc('-');
              
           }
+          */
+         /*
+         
+         if ((messungcounter & 1)==0)
+         {
+            lcd_gotoxy(1,1);
+            lcd_putc(':');
+            
+         }
+         else
+         {
+            lcd_gotoxy(1,1);
+            lcd_putc(' ');
+            
+         }
+          */
+         //lcd_putint2(impulszeit/1000);
+         //lcd_putint(impulszeit);
          
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
@@ -1191,11 +1199,24 @@ int main(void)
             //lcd_putint(messungcounter);
 
             paketcounter++;
-            lcd_gotoxy(1,0);
-            lcd_puts("    \0");
+            //lcd_gotoxy(0,0);
+            //lcd_puts("  \0");
             
-            lcd_gotoxy(1,0);
-            lcd_putint2(paketcounter);
+            if ((paketcounter & 1)==0)
+            {
+               lcd_gotoxy(1,1);
+               lcd_putc(':');
+               
+            }
+            else
+            {
+               lcd_gotoxy(1,1);
+               lcd_putc(' ');
+               
+            }
+
+            //lcd_gotoxy(0,0);
+            //lcd_putint2(paketcounter);
 
             
             impulsmittelwert = impulszeitsumme;
@@ -1240,26 +1261,28 @@ int main(void)
  
             wattstunden = impulscount/10;
             
-            
-            //lcd_putint(wattstunden/1000);
-            //lcd_putc('.');
-            //lcd_putint3(wattstunden);
-            //lcd_putc('W');
-            //lcd_putc(':');
-            
+            /*
+            lcd_gotoxy(9,1);
+            lcd_putint(wattstunden/1000);
+            lcd_putc('.');
+            lcd_putint3(wattstunden);
+            lcd_putc('W');
+            lcd_putc('h');
+            */
             
              dtostrf(leistung,5,0,stromstring);
             
                lcd_gotoxy(0,1);
                lcd_putc('L');
-               lcd_putc(':');
+               //lcd_putc(':');
                
                
-          //  if (paketcounter == 1)
+            if (!(paketcounter == 1))
             {
-               lcd_puts("        \0");
+               //lcd_puts("     \0");
                lcd_gotoxy(2,1);
                lcd_puts(stromstring);
+               lcd_putc('W');
             }
              //lcd_putc('*');
              //lcd_putc(' ');
@@ -1295,6 +1318,14 @@ int main(void)
                //lcd_gotoxy(0,1);
                //lcd_putint(messungcounter);
                //lcd_putc(' ');
+               
+               lcd_gotoxy(9,1);
+               lcd_putint(wattstunden/1000);
+               lcd_putc('.');
+               lcd_putint3(wattstunden);
+               lcd_putc('W');
+               lcd_putc('h');
+
                
                if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
                {
@@ -1350,6 +1381,7 @@ int main(void)
          impulszeit=0;
          currentstatus &= ~(1<<IMPULSBIT);
          
+         PORTD &= ~(1<<ECHOPIN);
       }
 		//**    End Current-Routinen*************************
 		
@@ -1428,8 +1460,8 @@ int main(void)
                webstatus &= ~(1<<DATAOK); // client_browse nur einmal
                webstatus |= (1<<DATAPEND);
                
-               lcd_gotoxy(18,0);
-               lcd_putc('$');
+               lcd_gotoxy(19,0);
+               lcd_putc('>');
 
                // Daten senden
                //www_server_reply(buf,dat_p); // send data
