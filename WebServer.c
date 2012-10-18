@@ -91,7 +91,6 @@ static uint8_t  webtaskflag =0;
 static uint8_t monitoredhost[4] = {10,0,0,7};
 
 
-static char SolarDataString[64];
 static char CurrentDataString[64];
 
 static char* teststring = "pw=Pong&strom=360\0";
@@ -185,6 +184,7 @@ void lcd_put_tempAbMinus20(uint16_t temperatur);
 
 //RH4702 52 48 34 37 30 33
 static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
+//static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x99};
 
 // how did I get the mac addr? Translate the first 3 numbers into ascii is: TUX
 // This web server's own IP.
@@ -193,6 +193,7 @@ static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
 
 // IP des Webservers 
 static uint8_t myip[4] = {192,168,1,215};
+//static uint8_t myip[4] = {192,168,1,219};
 
 // IP address of the web server to contact (IP of the first portion of the URL):
 //static uint8_t websrvip[4] = {77,37,2,152};
@@ -374,16 +375,16 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
    if (statuscode==0)
    {
       /*
-      lcd_gotoxy(12,0);
-      lcd_puts("        \0");
-      lcd_gotoxy(12,0);
-      lcd_puts("s cb OK\0");
+         lcd_gotoxy(12,0);
+         lcd_puts("        \0");
+         lcd_gotoxy(12,0);
+         lcd_puts("s cb OK\0");
        */
       lcd_gotoxy(19,0);
       lcd_putc(' ');
       lcd_gotoxy(19,0);
       lcd_putc('+');
-
+      
       webstatus &= ~(1<<DATASEND);
       
       webstatus &= ~(1<<DATAPEND);
@@ -401,11 +402,11 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
    else
    {
       /*
-      lcd_gotoxy(0,1);
-      lcd_puts("        \0");
-      lcd_gotoxy(0,1);
-      lcd_puts("s cb err\0");
-      lcd_puthex(statuscode);
+         lcd_gotoxy(0,1);
+         lcd_puts("        \0");
+         lcd_gotoxy(0,1);
+         lcd_puts("s cb err\0");
+         lcd_puthex(statuscode);
        */
       lcd_gotoxy(19,0);
       lcd_putc(' ');
@@ -442,32 +443,6 @@ void home_browserresult_callback(uint8_t statuscode,uint16_t datapos)
 }
 
 
-
-void alarm_browserresult_callback(uint8_t statuscode,uint16_t datapos)
-{
-    // datapos is not used in this example
-    if (statuscode==0)
-    {
-        
-        lcd_gotoxy(0,0);
-        lcd_puts("        \0");
-        lcd_gotoxy(0,0);
-        lcd_puts("a cb OK\0");
-        
-        web_client_sendok++;
-        //				sei();
-        
-    }
-    else
-    {
-        lcd_gotoxy(0,0);
-        lcd_puts("         \0");
-        lcd_gotoxy(0,0);
-        lcd_puts("a cb err\0");
-        lcd_puthex(statuscode);
-        
-    }
-}
 
 /* ************************************************************************ */
 /* Eigene Funktionen														*/
@@ -1043,7 +1018,6 @@ int main(void)
    InitCurrent();
    timer2();
    
- //  static volatile uint8_t messungcounter=0;
    static volatile uint8_t paketcounter=0;
    
   
@@ -1062,9 +1036,19 @@ int main(void)
 		{
 			loopcount0=0;
          
-         if (webstatus & (1<<DATAPEND)&& loopcount1 > 6)
+         if (webstatus & (1<<DATAPEND)&& loopcount1 > 6) // callback simulieren
          {
             webstatus &= ~(1<<DATASEND);
+            
+            webstatus &= ~(1<<DATAPEND);
+            
+            // Messungen wieder starten
+            
+            webstatus &= ~(1<<CURRENTSTOP);
+            webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
+            sei();
+
+            
             //loopcount1=0;
          }
          
@@ -1093,19 +1077,6 @@ int main(void)
 				loopcount1++;
 				
 			}
-			//if (LOOPLEDPORTPIN &(1<<LOOPLED))
-         /*
-			if (loopcount1%2==0)
-			{
-            lcd_gotoxy(19,1);
-            lcd_putc('*');
-			}
-         else
-         {
-            lcd_gotoxy(19,1);
-            lcd_putc('+');
-         }
-         */
 			LOOPLEDPORT ^=(1<<LOOPLED);
 		}
 		
@@ -1315,17 +1286,22 @@ int main(void)
             if (webstatus & (1<<DATALOOP))
             {
                webstatus &= ~(1<<DATALOOP);
-               //lcd_gotoxy(0,1);
-               //lcd_putint(messungcounter);
-               //lcd_putc(' ');
                
-               lcd_gotoxy(9,1);
-               lcd_putint(wattstunden/1000);
-               lcd_putc('.');
-               lcd_putint3(wattstunden);
-               lcd_putc('W');
-               lcd_putc('h');
-
+               paketcounter=0;
+               
+               if (TEST)
+               {
+                  lcd_gotoxy(0,1);
+                  lcd_putint(messungcounter);
+                  lcd_putc(' ');
+                  
+                  lcd_gotoxy(9,1);
+                  lcd_putint(wattstunden/1000);
+                  lcd_putc('.');
+                  lcd_putint3(wattstunden);
+                  lcd_putc('W');
+                  lcd_putc('h');
+               }
                
                if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
                {
@@ -1348,7 +1324,7 @@ int main(void)
                // senden aktivieren
                webstatus |= (1<<DATASEND);
                webstatus |= (1<<DATAOK);
-                
+               
                webstatus |= (1<<CURRENTSTOP);
                
                webstatus |= (1<<CURRENTWAIT);
@@ -1366,9 +1342,12 @@ int main(void)
             //anzeigewert = leistung/0x81;
             anzeigewert = leistung/0x40;
             
-            //lcd_putint(anzeigewert);
+            if (TEST)
+            {
+               lcd_putint(anzeigewert);
+            }
             
- //           webstatus |= (1<<CURRENTSEND);
+            webstatus |= (1<<CURRENTSEND);
             
          } // genuegend Werte
          else
