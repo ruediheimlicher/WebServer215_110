@@ -380,8 +380,8 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
          lcd_gotoxy(12,0);
          lcd_puts("s cb OK\0");
        */
-      lcd_gotoxy(19,0);
-      lcd_putc(' ');
+     // lcd_gotoxy(19,0);
+     // lcd_putc(' ');
       lcd_gotoxy(19,0);
       lcd_putc('+');
       
@@ -443,6 +443,32 @@ void home_browserresult_callback(uint8_t statuscode,uint16_t datapos)
 }
 
 
+
+void alarm_browserresult_callback(uint8_t statuscode,uint16_t datapos)
+{
+    // datapos is not used in this example
+    if (statuscode==0)
+    {
+        
+        lcd_gotoxy(0,0);
+        lcd_puts("        \0");
+        lcd_gotoxy(0,0);
+        lcd_puts("a cb OK\0");
+        
+        web_client_sendok++;
+        //				sei();
+        
+    }
+    else
+    {
+        lcd_gotoxy(0,0);
+        lcd_puts("         \0");
+        lcd_gotoxy(0,0);
+        lcd_puts("a cb err\0");
+        lcd_puthex(statuscode);
+        
+    }
+}
 
 /* ************************************************************************ */
 /* Eigene Funktionen														*/
@@ -1155,16 +1181,16 @@ int main(void)
          
          if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
          {
-            lcd_gotoxy(18,0);
+            lcd_gotoxy(19,0);
             lcd_putc(' ');
-            lcd_putc(' ');
+            //lcd_putc(' ');
             //lcd_gotoxy(6,1);
             //lcd_putc(' ');
 
             //lcd_gotoxy(16,1);
             //lcd_puts("  \0");
-            lcd_gotoxy(0,1);
-            lcd_puts("    \0");
+            //lcd_gotoxy(0,1);
+            //lcd_puts("    \0");
 
             //lcd_gotoxy(0,1);
             //lcd_putint(messungcounter);
@@ -1253,6 +1279,7 @@ int main(void)
                //lcd_puts("     \0");
                lcd_gotoxy(2,1);
                lcd_puts(stromstring);
+               lcd_putc(' ');
                lcd_putc('W');
             }
              //lcd_putc('*');
@@ -1344,6 +1371,7 @@ int main(void)
             
             if (TEST)
             {
+               lcd_gotoxy(9,0);
                lcd_putint(anzeigewert);
             }
             
