@@ -14,6 +14,7 @@ volatile static float               impulsmittelwert=0; // Mittelwertt der Impul
 
 volatile uint8_t                    currentstatus=0; // Byte fuer Status der Strommessung
 volatile uint8_t                    webstatus =0;     // Byte fuer Ablauf der Messung/Uebertragung
+volatile uint8_t                    errstatus =0;     // Byte fuer errors der Messung/Uebertragung
 
 volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Events,
                                                       // nach denen Daten des Clients gesendet werden sollen
@@ -49,6 +50,8 @@ volatile uint8_t messungcounter;
 
 #define	IMPULSPIN                  0    // Pin fuer Anzeige Impuls
 
+// Fehlerbits
+#define  CALLBACKERR                0
 
 //volatile uint8_t timer2startwert=TIMER2_ENDWERT;
 
@@ -159,8 +162,6 @@ ISR( INT1_vect )
       //lcd_puts("wt\0");
       
       webstatus &= ~(1<<CURRENTWAIT);
-      
-      
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
       return;
    }

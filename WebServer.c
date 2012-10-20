@@ -235,7 +235,7 @@ static uint8_t pingsrcip[4];
 static uint8_t start_web_client=0;
 static uint8_t web_client_sendok=0; // Anzahl callbackaufrufe
 
-
+static uint8_t  callbackerrcounter=0;
 
 #define CURRENTSEND                 0     // Bit fuer: Daten an Server senden
 #define CURRENTSTOP                 1     // Bit fuer: Impulse ignorieren
@@ -1064,6 +1064,9 @@ int main(void)
          
          if (webstatus & (1<<DATAPEND)&& loopcount1 > 6) // callback simulieren
          {
+            callbackerrcounter++;
+            errstatus |= (1<<CALLBACKERR);
+            
             webstatus &= ~(1<<DATASEND);
             
             webstatus &= ~(1<<DATAPEND);
