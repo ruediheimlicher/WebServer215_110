@@ -53,6 +53,10 @@ volatile uint8_t messungcounter;
 // Fehlerbits
 #define  CALLBACKERR                0
 
+#define TESTSERVER                  0     // Umschalten des Outputs auf Testserver
+#define TESTIP                      219   // last Element der IP des Testservers, ergibt auch MAC-Adresse
+
+
 //volatile uint8_t timer2startwert=TIMER2_ENDWERT;
 
 // SPI

@@ -398,6 +398,8 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       web_client_sendok++;
       
       
+      callbackerrcounter=0; // callbackerrcounter reset
+      errstatus &= ~(1<<CALLBACKERR);
    }
    else
    {
@@ -415,6 +417,47 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       
    }
 }
+
+void err_browserresult_callback(uint8_t statuscode,uint16_t datapos)
+{
+   // datapos is not used in this example
+   if (statuscode==0)
+   {
+      /*
+       lcd_gotoxy(12,0);
+       lcd_puts("        \0");
+       lcd_gotoxy(12,0);
+       lcd_puts("e cb OK\0");
+       */
+      // lcd_gotoxy(19,0);
+      // lcd_putc(' ');
+      lcd_gotoxy(18,0);
+      lcd_putc('e');
+      
+      //webstatus &= ~(1<<DATASEND);
+      
+      //webstatus &= ~(1<<DATAPEND);
+      
+      callbackerrcounter=0; // callbackerrcounter reset
+      
+   }
+   else
+   {
+      /*
+       lcd_gotoxy(0,1);
+       lcd_puts("        \0");
+       lcd_gotoxy(0,1);
+       lcd_puts("s cb err\0");
+       lcd_puthex(statuscode);
+       */
+      lcd_gotoxy(18,0);
+      lcd_putc(' ');
+      lcd_gotoxy(18,0);
+      lcd_putc('-');
+      
+   }
+}
+
 
 void home_browserresult_callback(uint8_t statuscode,uint16_t datapos)
 {
@@ -1006,6 +1049,21 @@ int main(void)
 	CLKPR=(1<<CLKPCE); // change enable
 	CLKPR=0; // "no pre-scaler"
 	_delay_loop_1(0); // 60us
+   
+   
+   // Umleitung auf Testserver??
+   
+   if (TESTSERVER)
+   {
+      lcd_gotoxy(0,1);
+      lcd_puts("TESTSERVER\0");
+      myip[3] = TESTIP;
+      mymac[5] = TESTIP;
+   }
+   
+
+   
+   
 	
 	/*initialize enc28j60*/
 	enc28j60Init(mymac);
@@ -1076,7 +1134,8 @@ int main(void)
             webstatus &= ~(1<<CURRENTSTOP);
             webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
             sei();
-
+            
+            errstatus |= (1<<CALLBACKERR); // wird in callback wieder reset
             
             //loopcount1=0;
          }
@@ -1349,6 +1408,24 @@ int main(void)
                   char* tempstromstring = (char*)trimwhitespace(webstromstring);
                   //strcat(CurrentDataString,stromstring);
                   strcat(CurrentDataString,tempstromstring);
+                  
+                  // Wattsekunden anfuegen
+                  char ws[16]= {};
+                  itoa((int)wattstunden,ws,10); // integer zu ascii im Zehnersystem
+                  strcat(CurrentDataString,"&ws=");
+                  strcat(CurrentDataString,ws);
+                
+                  // callbackerr anfuegen
+                  strcat(CurrentDataString,"&e0=");
+                  char temperr0[4]= {};
+                  itoa((int)callbackerrcounter,temperr0,10); // integer zu ascii im Zehnersystem
+                  //lcd_gotoxy(10,0);
+                  //lcd_puts(temperr0);
+                  strcat(CurrentDataString,temperr0);
+                  
+                  
+                  
+
                }
                
                // senden aktivieren
