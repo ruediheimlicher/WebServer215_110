@@ -398,8 +398,6 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       web_client_sendok++;
       
       
-      callbackerrcounter=0; // callbackerrcounter reset
-      errstatus &= ~(1<<CALLBACKERR);
    }
    else
    {
@@ -417,47 +415,6 @@ void strom_browserresult_callback(uint8_t statuscode,uint16_t datapos)
       
    }
 }
-
-void err_browserresult_callback(uint8_t statuscode,uint16_t datapos)
-{
-   // datapos is not used in this example
-   if (statuscode==0)
-   {
-      /*
-       lcd_gotoxy(12,0);
-       lcd_puts("        \0");
-       lcd_gotoxy(12,0);
-       lcd_puts("e cb OK\0");
-       */
-      // lcd_gotoxy(19,0);
-      // lcd_putc(' ');
-      lcd_gotoxy(18,0);
-      lcd_putc('e');
-      
-      //webstatus &= ~(1<<DATASEND);
-      
-      //webstatus &= ~(1<<DATAPEND);
-      
-      callbackerrcounter=0; // callbackerrcounter reset
-      
-   }
-   else
-   {
-      /*
-       lcd_gotoxy(0,1);
-       lcd_puts("        \0");
-       lcd_gotoxy(0,1);
-       lcd_puts("s cb err\0");
-       lcd_puthex(statuscode);
-       */
-      lcd_gotoxy(18,0);
-      lcd_putc(' ');
-      lcd_gotoxy(18,0);
-      lcd_putc('-');
-      
-   }
-}
-
 
 void home_browserresult_callback(uint8_t statuscode,uint16_t datapos)
 {
@@ -945,7 +902,57 @@ void lcdinit()
 	
 }
 
+/*
+ http://www.lothar-miller.de/s9y/archives/25-Filter-in-C.html
+ Filter in C
+ 
+ Ein Filter in der Art eines RC-Filters (PT1-Glied) kann in einem uC relativ leicht implementiert werden. Dazu bedarf es, wie beim RC-Glied eines "Summenspeichers" (der Kondensator) und einer Gewichtung (Widerstand bzw. Zeitkonstante).
+ 
+ unsigned long mittelwert(unsigned long newval)
+ {
+ static unsigned long avgsum = 0;
+ // Filterlängen in 2er-Potenzen --> Compiler optimiert
+ avgsum -= avgsum/128;
+ avgsum += newval;
+ return avgsum/128;
+ }
+ 
+ 
+ Etwas spannender wird es, wenn die Initialisierung des Startwertes nicht so lange dauern soll. Wenn ich beispielsweise nach dem 1. Messwert diesen Wert und ab dem 2. Messwert bis zur Filterbreite den Mittelwert aus allen Messungen haben möchte, dann ist eine andere Behandlung der Initialisierung nötig.
+ 
+ unsigned long mittelwert(unsigned long newval)
+ {
+ static short n = 0;
+ static unsigned long avgsum = 0;
+ if (n<100) {
+ n++;
+ avgsum += newval;
+ return avgsum/n;
+ }
+ else {
+ // Konstanten kann der Compiler besser optimieren
+ avgsum -= avgsum/100;
+ avgsum += newval;
+ return avgsum/100;
+ }
+ }
+ 
+ 
+ 
+ Der Aufruf erfolgt z.B. anhand eines Timer-Flags:
+ 
+ int main(int argc, char* argv[])
+ {
+ :
+ while(1) {
+ if(ti.Akt>ti.Calc) {
+ avgwert = mittelwert(value[i]);
+ printf("i: %3d --> Wert: %d --> Mittelwert: %d\n",i, value[i], mw);
+ }
+ }
+ }
 
+ */
 
 
 
@@ -1050,21 +1057,6 @@ int main(void)
 	CLKPR=0; // "no pre-scaler"
 	_delay_loop_1(0); // 60us
    
-   
-   // Umleitung auf Testserver??
-   
-   if (TESTSERVER)
-   {
-      lcd_gotoxy(0,1);
-      lcd_puts("TESTSERVER\0");
-      myip[3] = TESTIP;
-      mymac[5] = TESTIP;
-   }
-   
-
-   
-   
-	
 	/*initialize enc28j60*/
 	enc28j60Init(mymac);
 	enc28j60clkout(2); // change clkout from 6.25MHz to 12.5MHz
@@ -1135,7 +1127,6 @@ int main(void)
             webstatus |= (1<<CURRENTWAIT); // Beim naechsten Impuls Messungen wieder starten
             sei();
             
-            errstatus |= (1<<CALLBACKERR); // wird in callback wieder reset
             
             //loopcount1=0;
          }
@@ -1180,84 +1171,76 @@ int main(void)
       {
          PORTD |=(1<<ECHOPIN);
          /*
-         // Versuche, erste Messung zu verbessern
-         if (messungcounter == 0)
-         {
-            //impulsmittelwert=0; // nutzlos
-            //impulszeitsumme=0; // nutzlos
-            // currentstatus &= 0xF0; // Bit 0-3 reset hier nutzlos
-            //paketcounter =0; // nutzlos
-            
-         }
-         else
-         {
-         }
-         */
-
+          // Versuche, erste Messung zu verbessern
+          if (messungcounter == 0)
+          {
+          //impulsmittelwert=0; // nutzlos
+          //impulszeitsumme=0; // nutzlos
+          // currentstatus &= 0xF0; // Bit 0-3 reset hier nutzlos
+          //paketcounter =0; // nutzlos
+          
+          }
+          else
+          {
+          }
+          */
+         
          //if((x & 1) == 0)
          
          /*
-         if (webstatus & (1<<DATAPEND))
-         {
-            lcd_gotoxy(19,1);
-            lcd_putc('p');
-           
-         }
+          if (webstatus & (1<<DATAPEND))
+          {
+          lcd_gotoxy(19,1);
+          lcd_putc('p');
+          
+          }
           else
           {
-             lcd_gotoxy(19,1);
-             lcd_putc('-');
-             
+          lcd_gotoxy(19,1);
+          lcd_putc('-');
+          
           }
           */
          /*
-         
-         if ((messungcounter & 1)==0)
-         {
-            lcd_gotoxy(1,1);
-            lcd_putc(':');
-            
-         }
-         else
-         {
-            lcd_gotoxy(1,1);
-            lcd_putc(' ');
-            
-         }
+          
+          if ((messungcounter & 1)==0)
+          {
+          lcd_gotoxy(1,1);
+          lcd_putc(':');
+          
+          }
+          else
+          {
+          lcd_gotoxy(1,1);
+          lcd_putc(' ');
+          
+          }
           */
          //lcd_putint2(impulszeit/1000);
          //lcd_putint(impulszeit);
          
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
-         impulszeitsumme += impulszeit/ANZAHLWERTE;     // Wert aufsummieren
-            
-         //lcd_gotoxy(10,1);
-         //lcd_putint(currentstatus);
-         //lcd_gotoxy(4,1);
-         //lcd_putc('*');
-         //lcd_putint(currentstatus & 0x0F);
-         //lcd_gotoxy(19,0);
-         //lcd_putc('x');
+         impulszeitsumme += impulszeit/ANZAHLWERTE;      // Wert aufsummieren         
          
-         
-         if ((currentstatus & 0x0F) == ANZAHLWERTE)   // genuegend Werte
+         if ((currentstatus & 0x0F) == ANZAHLWERTE)      // genuegend Werte
          {
             lcd_gotoxy(19,0);
             lcd_putc(' ');
             //lcd_putc(' ');
             //lcd_gotoxy(6,1);
             //lcd_putc(' ');
-
+            
             //lcd_gotoxy(16,1);
             //lcd_puts("  \0");
             //lcd_gotoxy(0,1);
             //lcd_puts("    \0");
-
+            
             //lcd_gotoxy(0,1);
             //lcd_putint(messungcounter);
-
+            
             paketcounter++;
+            
             //lcd_gotoxy(0,0);
             //lcd_puts("  \0");
             
@@ -1273,10 +1256,10 @@ int main(void)
                lcd_putc(' ');
                
             }
-
+            
             //lcd_gotoxy(0,0);
             //lcd_putint2(paketcounter);
-
+            
             
             impulsmittelwert = impulszeitsumme;
             impulszeitsumme = 0;
@@ -1293,7 +1276,7 @@ int main(void)
             
             //lcd_puthex(hb);
             //lcd_puthex(lb);
-            //                lcd_putc(':');
+            //lcd_putc(':');
             
             //char impstring[12];
             //dtostrf(impulsmittelwert,8,2,impstring);
@@ -1316,26 +1299,24 @@ int main(void)
             //       leistung = 36000000.0/impulsmittelwert;
             //     Stromzaehler
             
-            
- 
             wattstunden = impulscount/10;
             
             /*
-            lcd_gotoxy(9,1);
-            lcd_putint(wattstunden/1000);
-            lcd_putc('.');
-            lcd_putint3(wattstunden);
-            lcd_putc('W');
-            lcd_putc('h');
-            */
+             lcd_gotoxy(9,1);
+             lcd_putint(wattstunden/1000);
+             lcd_putc('.');
+             lcd_putint3(wattstunden);
+             lcd_putc('W');
+             lcd_putc('h');
+             */
             
-             dtostrf(leistung,5,0,stromstring);
+            dtostrf(leistung,5,0,stromstring);
             
-               lcd_gotoxy(0,1);
-               lcd_putc('L');
-               //lcd_putc(':');
-               
-               
+            lcd_gotoxy(0,1);
+            lcd_putc('L');
+            //lcd_putc(':');
+            
+            
             if (!(paketcounter == 1))
             {
                //lcd_puts("     \0");
@@ -1344,11 +1325,11 @@ int main(void)
                lcd_putc(' ');
                lcd_putc('W');
             }
-             //lcd_putc('*');
-             //lcd_putc(' ');
-             //lcd_putint16(leistung);
-             //lcd_putc(' ');
-             
+            //lcd_putc('*');
+            //lcd_putc(' ');
+            //lcd_putint16(leistung);
+            //lcd_putc(' ');
+            
             /*
              if (abs(leistung-lastleistung) > 10)
              {
@@ -1370,8 +1351,8 @@ int main(void)
              lastcounter=0;
              }
              */
-           
-           // if (paketcounter  >= ANZAHLPAKETE)
+            
+            // if (paketcounter  >= ANZAHLPAKETE)
             if (webstatus & (1<<DATALOOP))
             {
                webstatus &= ~(1<<DATALOOP);
@@ -1408,24 +1389,6 @@ int main(void)
                   char* tempstromstring = (char*)trimwhitespace(webstromstring);
                   //strcat(CurrentDataString,stromstring);
                   strcat(CurrentDataString,tempstromstring);
-                  
-                  // Wattsekunden anfuegen
-                  char ws[16]= {};
-                  itoa((int)wattstunden,ws,10); // integer zu ascii im Zehnersystem
-                  strcat(CurrentDataString,"&ws=");
-                  strcat(CurrentDataString,ws);
-                
-                  // callbackerr anfuegen
-                  strcat(CurrentDataString,"&e0=");
-                  char temperr0[4]= {};
-                  itoa((int)callbackerrcounter,temperr0,10); // integer zu ascii im Zehnersystem
-                  //lcd_gotoxy(10,0);
-                  //lcd_puts(temperr0);
-                  strcat(CurrentDataString,temperr0);
-                  
-                  
-                  
-
                }
                
                // senden aktivieren
