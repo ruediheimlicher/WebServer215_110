@@ -907,7 +907,8 @@ void lcdinit()
  Filter in C
  
  Ein Filter in der Art eines RC-Filters (PT1-Glied) kann in einem uC relativ leicht implementiert werden. Dazu bedarf es, wie beim RC-Glied eines "Summenspeichers" (der Kondensator) und einer Gewichtung (Widerstand bzw. Zeitkonstante).
- 
+ */
+/*
  unsigned long mittelwert(unsigned long newval)
  {
  static unsigned long avgsum = 0;
@@ -916,28 +917,54 @@ void lcdinit()
  avgsum += newval;
  return avgsum/128;
  }
- 
- 
+ */
+ /*
  Etwas spannender wird es, wenn die Initialisierung des Startwertes nicht so lange dauern soll. Wenn ich beispielsweise nach dem 1. Messwert diesen Wert und ab dem 2. Messwert bis zur Filterbreite den Mittelwert aus allen Messungen haben möchte, dann ist eine andere Behandlung der Initialisierung nötig.
- 
- unsigned long mittelwert(unsigned long newval)
+ */
+ unsigned long mittelwert(unsigned long newval,int faktor)
  {
  static short n = 0;
  static unsigned long avgsum = 0;
- if (n<100) {
+ if (n<faktor)
+ {
  n++;
  avgsum += newval;
  return avgsum/n;
  }
- else {
+ else
+ {
  // Konstanten kann der Compiler besser optimieren
- avgsum -= avgsum/100;
+ avgsum -= avgsum/faktor;
  avgsum += newval;
- return avgsum/100;
+ return avgsum/faktor;
+    
  }
  }
+
+unsigned long gleitmittelwert(unsigned long newval,int faktor)
+{
+   static short n = 0;
+   static unsigned long avgsum = 0;
+   if (n<faktor)
+   {
+      n++;
+      avgsum += newval;
+      return avgsum/n;
+   }
+   else
+   {
+      // Konstanten kann der Compiler besser optimieren
+      avgsum -= avgsum/faktor;
+      avgsum += newval;
+      return avgsum/faktor;
+      
+   }
+}
+
+
+
  
- 
+ /*
  
  Der Aufruf erfolgt z.B. anhand eines Timer-Flags:
  
@@ -1170,55 +1197,7 @@ int main(void)
       if (currentstatus & (1<<IMPULSBIT)) // neuer Impuls angekommen
       {
          PORTD |=(1<<ECHOPIN);
-         /*
-          // Versuche, erste Messung zu verbessern
-          if (messungcounter == 0)
-          {
-          //impulsmittelwert=0; // nutzlos
-          //impulszeitsumme=0; // nutzlos
-          // currentstatus &= 0xF0; // Bit 0-3 reset hier nutzlos
-          //paketcounter =0; // nutzlos
           
-          }
-          else
-          {
-          }
-          */
-         
-         //if((x & 1) == 0)
-         
-         /*
-          if (webstatus & (1<<DATAPEND))
-          {
-          lcd_gotoxy(19,1);
-          lcd_putc('p');
-          
-          }
-          else
-          {
-          lcd_gotoxy(19,1);
-          lcd_putc('-');
-          
-          }
-          */
-         /*
-          
-          if ((messungcounter & 1)==0)
-          {
-          lcd_gotoxy(1,1);
-          lcd_putc(':');
-          
-          }
-          else
-          {
-          lcd_gotoxy(1,1);
-          lcd_putc(' ');
-          
-          }
-          */
-         //lcd_putint2(impulszeit/1000);
-         //lcd_putint(impulszeit);
-         
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
          impulszeitsumme += impulszeit/ANZAHLWERTE;      // Wert aufsummieren         

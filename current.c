@@ -163,6 +163,7 @@ ISR( INT1_vect )
       
       webstatus &= ~(1<<CURRENTWAIT);
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
+      currentcount =0;
       return;
    }
    
