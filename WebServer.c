@@ -1211,20 +1211,11 @@ int main(void)
             if (filtercount < filterfaktor)
             {
                filtermittelwert = ((filtercount-1)* filtermittelwert + impulszeit)/filtercount;
-               
-               //lcd_gotoxy(19,1);
-               //lcd_putc('a');
-               
             }
             else
             {
                filtermittelwert = ((filterfaktor-1)* filtermittelwert + impulszeit)/filterfaktor;
-               
-               
-               //lcd_gotoxy(19,1);
-               //lcd_putc('f');
-            
-            }
+             }
             
          }
          
