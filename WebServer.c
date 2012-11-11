@@ -1200,8 +1200,59 @@ int main(void)
           
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
-         impulszeitsumme += impulszeit/ANZAHLWERTE;      // Wert aufsummieren         
+         impulszeitsumme += impulszeit/ANZAHLWERTE;      // Wert aufsummieren
          
+         if (filtercount == 0) // neues Paket
+         {
+            filtermittelwert = impulszeit;
+         }
+         else
+         {
+            if (filtercount < filterfaktor)
+            {
+               filtermittelwert = ((filtercount-1)* filtermittelwert + impulszeit)/filtercount;
+               
+               //lcd_gotoxy(19,1);
+               //lcd_putc('a');
+               
+            }
+            else
+            {
+               filtermittelwert = ((filterfaktor-1)* filtermittelwert + impulszeit)/filterfaktor;
+               
+               
+               //lcd_gotoxy(19,1);
+               //lcd_putc('f');
+            
+            }
+            
+         }
+         
+         char filterstromstring[8];
+         filtercount++;
+         /*
+         lcd_gotoxy(0,0);
+         lcd_putint16(impulszeit/100);
+         lcd_gotoxy(10,0);
+         lcd_putint16(filtermittelwert/100);
+         lcd_gotoxy(10,1);
+         lcd_putint(filtercount);
+         lcd_putc('*');
+         
+         dtostrf(filtermittelwert,5,1,filterstromstring);
+         //lcd_puts(filterstromstring);
+         */
+         
+         if (filtercount & (filterfaktor == 0)) // Wert anzeigen
+         {
+            //lcd_gotoxy(10,0);
+            //lcd_putint16(filtermittelwert);
+            //lcd_putc('*');
+            //dtostrf(filtermittelwert,5,1,filterstromstring);
+            //lcd_puts(filterstromstring);
+         }
+         
+          
          if ((currentstatus & 0x0F) == ANZAHLWERTE)      // genuegend Werte
          {
             lcd_gotoxy(19,0);
@@ -1233,7 +1284,6 @@ int main(void)
             {
                lcd_gotoxy(1,1);
                lcd_putc(' ');
-               
             }
             
             //lcd_gotoxy(0,0);
@@ -1274,7 +1324,13 @@ int main(void)
              */
             
             //     leistung = 0xFFFF/impulsmittelwert;
-            leistung = 360.0/impulsmittelwert*100000.0;
+//            leistung = 360.0/impulsmittelwert*100000.0;
+
+            
+            // neuer Mittelwert: filtermittelwert
+            leistung = 360.0/filtermittelwert*100000.0;
+
+            
             //       leistung = 36000000.0/impulsmittelwert;
             //     Stromzaehler
             
@@ -1298,10 +1354,12 @@ int main(void)
             
             if (!(paketcounter == 1))
             {
+               
                //lcd_puts("     \0");
+          
                lcd_gotoxy(2,1);
                lcd_puts(stromstring);
-               lcd_putc(' ');
+               //lcd_putc(' ');
                lcd_putc('W');
             }
             //lcd_putc('*');
@@ -1338,18 +1396,21 @@ int main(void)
                
                paketcounter=0;
                
+      //         filtercount =0;
+               
                if (TEST)
                {
-                  lcd_gotoxy(0,1);
-                  lcd_putint(messungcounter);
-                  lcd_putc(' ');
-                  
+                  //lcd_gotoxy(0,1);
+                  //lcd_putint(messungcounter);
+                  //lcd_putc(' ');
+                  /*
                   lcd_gotoxy(9,1);
                   lcd_putint(wattstunden/1000);
                   lcd_putc('.');
                   lcd_putint3(wattstunden);
                   lcd_putc('W');
                   lcd_putc('h');
+                   */
                }
                
                if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
@@ -1369,6 +1430,8 @@ int main(void)
                   //strcat(CurrentDataString,stromstring);
                   strcat(CurrentDataString,tempstromstring);
                }
+               
+               
                
                // senden aktivieren
                webstatus |= (1<<DATASEND);
@@ -1393,8 +1456,8 @@ int main(void)
             
             if (TEST)
             {
-               lcd_gotoxy(9,0);
-               lcd_putint(anzeigewert);
+               //lcd_gotoxy(9,0);
+               //lcd_putint(anzeigewert);
             }
             
             webstatus |= (1<<CURRENTSEND);

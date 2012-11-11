@@ -11,6 +11,9 @@ volatile static uint32_t            impulszeit=0;  // anzahl steps in INT1, wird
 volatile static float               impulszeitsumme=0;
 volatile static float               impulsmittelwert=0; // Mittelwertt der Impulszeiten in einem Messintervall
 
+volatile uint16_t                   filtercount = 0;        // counter fuer messwerte der Filterung
+volatile static float               filtermittelwert = 0;   // gleitender Mittelwert
+volatile uint8_t                    filterfaktor = 4;       // Filterlaenge
 
 volatile uint8_t                    currentstatus=0; // Byte fuer Status der Strommessung
 volatile uint8_t                    webstatus =0;     // Byte fuer Ablauf der Messung/Uebertragung
@@ -23,7 +26,7 @@ volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Ev
 volatile uint8_t messungcounter;
 
 
-#define TEST   0
+#define TEST   1
 
 // Endwert fuer Compare-Match von Timer2
 #define TIMER2_ENDWERT					 127; // 10 us
@@ -164,9 +167,10 @@ ISR( INT1_vect )
       webstatus &= ~(1<<CURRENTWAIT);
       TCCR2B |= (1<<CS20); // Timer wieder starten, Impuls ist Startimpuls, nicht auswerten
       currentcount =0;
+      
+      filtercount = 0;
       return;
    }
-   
    
    impulscount++; // Gesamtzahl der Impulse
    
