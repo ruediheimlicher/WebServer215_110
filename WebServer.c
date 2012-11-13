@@ -1324,11 +1324,11 @@ int main(void)
              */
             
             //     leistung = 0xFFFF/impulsmittelwert;
-//            leistung = 360.0/impulsmittelwert*100000.0;
+            leistung = 360.0/impulsmittelwert*100000.0;
 
             
             // neuer Mittelwert: filtermittelwert
-            leistung = 360.0/filtermittelwert*100000.0;
+//            leistung = 360.0/filtermittelwert*100000.0;
 
             
             //       leistung = 36000000.0/impulsmittelwert;
