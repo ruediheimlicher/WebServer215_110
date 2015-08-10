@@ -26,16 +26,33 @@ volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Ev
 volatile uint8_t messungcounter;
 
 
-#define TEST   1
+#define TEST   0
 
 // Endwert fuer Compare-Match von Timer2
-#define TIMER2_ENDWERT					 127; // 10 us
+#define TIMER2_ENDWERT					 125; // 10 us
 
 #define IMPULSBIT                   4 // gesetzt wenn Interrupt0 eintrifft. Nach Auswertung im Hauptprogramm wieder zurueckgesetzt
 
 #define ANZAHLWERTE                 8 // Anzahl Werte fuer Mittelwertbildung
 
 #define ANZAHLPAKETE                4 // Anzahl Pakete bis zur Uebertragung
+
+
+// Impulszaehler
+#define INTERVALL 100000 // 100ms Intervall fuer das Zaehlen der Impulse, 36 mWh
+// Zaehlen der Impulse bei hoher frequenz
+volatile static uint32_t intervallzeit=0; // in ISR von timer2 gezaehlt
+
+volatile uint16_t stromimpulscounter= 0; // Anz Stromimpulse im Intervall
+
+volatile static uint32_t anzahlimpulsmittelwerte=0;
+
+
+
+
+// mittelwerte aufsummiert
+volatile static uint16_t stromimpulsmittelwertarray[4]={};
+volatile uint8_t stromimpulsindex=0;
 
 
 #define OSZIPORT		PORTC
@@ -80,7 +97,7 @@ void timer2(void) // Takt fuer Strommessung
    //lcd_gotoxy(10,1);
 	//lcd_puts("Tim2 ini\0");
    TCCR2A=0;
-   PRR&=~(1<<PRTIM2); // write power reduction register to zero
+   //PRR&=~(1<<PRTIM2); // write power reduction register to zero
   
    TIMSK2 |= (1<<OCIE2A);                 // CTC Interrupt Enable
 
@@ -116,9 +133,22 @@ void timer2(void) // Takt fuer Strommessung
 
 ISR(TIMER2_COMPA_vect) // CTC Timer2
 {
-   //OSZITOGG;
+   OSZITOGG;
    currentcount++; // Zaehlimpuls
    //PORTB ^= (1<<0);
+   
+   
+   // Zeitfenster fuer Impulszaehlung bei hohen Frequenzen 100 ms
+   // Zeit messen fuer Intervall
+   intervallzeit++;
+   if (intervallzeit == INTERVALL) // Messintervall abgelaufen, Anzahl zu schleppenden Mittelwert anfuegen
+   {
+      intervallzeit = 0;
+      stromimpulsmittelwertarray[stromimpulsindex++] = stromimpulscounter;
+      stromimpulscounter=0;
+      stromimpulsindex &= 0x03; // <4
+   }
+
 }
 
 
@@ -150,6 +180,10 @@ ISR( INT1_vect )
    //lcd_gotoxy(0,1);
 	//lcd_puts("I0:\0");
    //lcd_putint(impulscount);
+   
+   stromimpulscounter++;
+   
+   volatile uint8_t messungcounter;
    
    if (webstatus & (1<<CURRENTSTOP)) // Webevent im Gang, Impulse ignorieren
    {
@@ -200,15 +234,14 @@ void InitCurrent(void)
 	EIMSK  |= (1<<INT0);
 */
    // interrupt on INT1 pin falling edge 
-	EICRA = (1<<ISC11) | (0<<ISC10);
+   EICRA = (1<<ISC11) ;//| (0<<ISC10);
 	// turn on interrupts!
 	EIMSK  |= (1<<INT1);
 
 
-	lcd_gotoxy(0,0);
-	lcd_puts("I1\0");
+	//lcd_gotoxy(0,0);
+	//lcd_puts("I1\0");
    
-	sei(); // Enable global interrupts
    
 } 
 
