@@ -71,10 +71,11 @@
 #define INT0PIN            2           // Pin Int0
 #define INT1PIN            3           // Pin Int1
 
+#define TIMER0_SEKUNDENTAKT            50000           // Anz Overflows von timer0 bis 1 Sekunde
 
 
 volatile uint16_t EventCounter=0;
-static char baseurl[]="http://ruediheimlicher.dyndns.org/";
+static char baseurl[]="http://ruediheimlichercurrent.dyndns.org/";
 
 
 
@@ -95,24 +96,13 @@ static char CurrentDataString[64];
 
 static char* teststring = "pw=Pong&strom=360\0";
 
-//static char EEPROM_String[96];
-
-//static  char d[4]={};
-//static char* key1;
-//static char *sstr;
-
-//char HeizungVarString[64];
-
-//static char AlarmDataString[64];
-
-//static char ErrDataString[32];
-
-
 volatile uint8_t oldErrCounter=0;
 
-
-
 static volatile uint8_t stepcounter=0;
+
+static volatile uint16_t timer0counter=0;
+static volatile uint16_t sekundencounter=0;
+
 
 // Prototypes
 void lcdinit(void);
@@ -188,19 +178,22 @@ static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
 
 // how did I get the mac addr? Translate the first 3 numbers into ascii is: TUX
 // This web server's own IP.
-//static uint8_t myip[4] = {10,0,0,29};
-//static uint8_t myip[4] = {192,168,255,100};
 
 // IP des Webservers 
 static uint8_t myip[4] = {192,168,1,215};
-//static uint8_t myip[4] = {192,168,1,219};
 
 // IP address of the web server to contact (IP of the first portion of the URL):
 //static uint8_t websrvip[4] = {77,37,2,152};
 
 
+
+
 // ruediheimlicher
-static uint8_t websrvip[4] = {193,17,85,42}; // ruediheimlicher 193.17.85.42
+//static uint8_t websrvip[4] = {213,188,35,156}; //213,188,35,156 30.7.2014 msh
+
+//static uint8_t websrvip[4] = {193,17,85,42}; // ruediheimlicher nine
+//static uint8_t websrvip[4] = {64,37,49,112}; // 64.37.49.112   28.02.2015 hostswiss // Pfade in .pl angepasst: cgi-bin neu in root dir
+static uint8_t websrvip[4] = {217,26,52,16};//        217.26.52.16  24.03.2015 hostpoint
 
 // The name of the virtual host which you want to contact at websrvip (hostname of the first portion of the URL):
 
@@ -214,8 +207,6 @@ static uint8_t websrvip[4] = {193,17,85,42}; // ruediheimlicher 193.17.85.42
 
 // ************************************************
 // IP der Basisstation !!!!!
-// Runde Basisstation : 
-//static uint8_t gwip[4] = {192,168,1,5};// Rueti
 
 // Viereckige Basisstation:
 static uint8_t gwip[4] = {192,168,1,1};// Rueti
@@ -224,7 +215,7 @@ static uint8_t gwip[4] = {192,168,1,1};// Rueti
 
 static char urlvarstr[21];
 // listen port for tcp/www:
-#define MYWWWPORT 81 
+#define MYWWWPORT 1401
 //
 
 #define BUFFER_SIZE 800
@@ -305,7 +296,7 @@ char *trimwhitespace(char *str)
 
 
 
-void timer0() // Analoganzeige
+void timer0() // Analoganzeige Messinstrument
 {
 	//----------------------------------------------------
 	// Set up timer 0 
@@ -340,6 +331,20 @@ ISR(TIMER0_COMPA_vect)
    //OCR0A++;
     
 }
+
+
+ISR(TIMER0_OVF_vect)
+{
+   timer0counter++;
+   if (timer0counter== TIMER0_SEKUNDENTAKT)
+   {
+      sekundencounter++;
+      timer0counter=0;
+      lcd_gotoxy(15,0);
+      lcd_putint(timer0counter);
+   }
+}
+
 
 uint16_t http200ok(void)
 {
@@ -807,7 +812,6 @@ uint16_t print_webpage_status(uint8_t *buf)
 	
 	//r_itoa(Temperatur,TemperaturStringV);
 	
-   
    plen=fill_tcp_data(buf,plen,stromstring);
    plen=fill_tcp_data_p(buf,plen,PSTR(" Watt</p>"));
 
@@ -866,15 +870,14 @@ void master_init(void)
 	
 //  DDRD &=~(1<<INT0PIN); //Pin 2 von Port D als Eingang fuer Interrupt Impuls
 //	PORTD |=(1<<INT0PIN); //HI
-//   DDRD &=~(1<<INT1PIN); //Pin 3 von Port D als Eingang fuer Interrupt Impuls
-//	PORTD |=(1<<INT1PIN); //HI
+   DDRD &=~(1<<INT1PIN); //Pin 3 von Port D als Eingang fuer Interrupt Impuls
+	PORTD |=(1<<INT1PIN); //HI
 
     
 	DDRD &= ~(1<<MASTERCONTROLPIN); // Pin 4 von PORT D als Eingang fuer MasterControl
 	PORTD |= (1<<MASTERCONTROLPIN);	// HI
 	
    
-   DDRD |= (1<<PORTB3);
 	
 }	
 
@@ -1089,7 +1092,7 @@ int main(void)
 	enc28j60clkout(2); // change clkout from 6.25MHz to 12.5MHz
 	_delay_loop_1(0); // 60us
 	
-	sei();
+	
 	
 	/* Magjack leds configuration, see enc28j60 datasheet, page 11 */
 	// LEDB=yellow LEDA=green
@@ -1123,7 +1126,6 @@ int main(void)
    
    static volatile uint8_t paketcounter=0;
    
-  
    
 #pragma  mark "while"
 	
@@ -1175,12 +1177,13 @@ int main(void)
 			}
 			else
 			{
+            loopcount1++;
             if (loopcount1 == 20)
             {
                //lcd_gotoxy(16,1);
                //lcd_putc(' ');
             }
-				loopcount1++;
+				
 				
 			}
 			LOOPLEDPORT ^=(1<<LOOPLED);
@@ -1273,19 +1276,19 @@ int main(void)
             
             //lcd_gotoxy(0,0);
             //lcd_puts("  \0");
-            
+            /*
             if ((paketcounter & 1)==0)
             {
-               lcd_gotoxy(1,1);
+               lcd_gotoxy(8,1);
                lcd_putc(':');
                
             }
             else
             {
-               lcd_gotoxy(1,1);
+               lcd_gotoxy(8,1);
                lcd_putc(' ');
             }
-            
+            */
             //lcd_gotoxy(0,0);
             //lcd_putint2(paketcounter);
             
@@ -1309,10 +1312,10 @@ int main(void)
             
             //char impstring[12];
             //dtostrf(impulsmittelwert,8,2,impstring);
-            //lcd_gotoxy(0,0);
+            lcd_gotoxy(0,1);
             //lcd_puts(impstring);
             //lcd_putc(':');
-            //lcd_putint16(impulsmittelwert);
+            lcd_putint16(impulsmittelwert);
             
             /*
              Impulsdauer: impulsmittelwert * TIMERIMPULSDAUER (10us)
@@ -1326,7 +1329,7 @@ int main(void)
             //     leistung = 0xFFFF/impulsmittelwert;
             leistung = 360.0/impulsmittelwert*100000.0;
 
-            
+            //leistung/=2;
             // neuer Mittelwert: filtermittelwert
 //            leistung = 360.0/filtermittelwert*100000.0;
 
@@ -1345,10 +1348,11 @@ int main(void)
              lcd_putc('h');
              */
             
-            dtostrf(leistung,5,0,stromstring);
+            // dtostrf(leistung,5,0,stromstring); // fuehrt zu 'strom=++123' in URL fuer strom.pl. Funktionierte trotzdem
+            dtostrf(leistung,5,1,stromstring);
             
-            lcd_gotoxy(0,1);
-            lcd_putc('L');
+            //lcd_gotoxy(0,0);
+            //lcd_putc('L');
             //lcd_putc(':');
             
             
@@ -1357,10 +1361,10 @@ int main(void)
                
                //lcd_puts("     \0");
           
-               lcd_gotoxy(2,1);
-               lcd_puts(stromstring);
+               //lcd_gotoxy(2,0);
+               //lcd_puts(stromstring);
                //lcd_putc(' ');
-               lcd_putc('W');
+               //lcd_putc('W');
             }
             //lcd_putc('*');
             //lcd_putc(' ');
@@ -1396,39 +1400,55 @@ int main(void)
                
                paketcounter=0;
                
-      //         filtercount =0;
+               //         filtercount =0;
                
-               if (TEST)
+               //if (TEST)
                {
-                  //lcd_gotoxy(0,1);
+                  //lcd_gotoxy(0,0);
                   //lcd_putint(messungcounter);
                   //lcd_putc(' ');
                   /*
-                  lcd_gotoxy(9,1);
-                  lcd_putint(wattstunden/1000);
-                  lcd_putc('.');
-                  lcd_putint3(wattstunden);
-                  lcd_putc('W');
-                  lcd_putc('h');
+                   lcd_gotoxy(9,1);
+                   lcd_putint(wattstunden/1000);
+                   lcd_putc('.');
+                   lcd_putint3(wattstunden);
+                   lcd_putc('W');
+                   lcd_putc('h');
                    */
                }
                
                if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
                {
                   // stromstring bilden
-                  char key1[]="pw=";
-                  char sstr[]="Pong";
+                  char key1[]="pw=\0";
+                  char sstr[]="Pong\0";
                   
                   strcpy(CurrentDataString,key1);
                   strcat(CurrentDataString,sstr);
+ 
+                  strcat(CurrentDataString,"&strom=\0");
+                  char webstromstring[16]={};
                   
-                  strcat(CurrentDataString,"&strom=");
-                  char webstromstring[10]={};
                   urlencode(stromstring,webstromstring);
-                  
+                  //lcd_gotoxy(0,0);
+                  //lcd_puts(stromstring);
+                  //lcd_putc('-');
+                  //lcd_puts(webstromstring);
+                  //lcd_putc('-');
+                 
                   char* tempstromstring = (char*)trimwhitespace(webstromstring);
+                  //lcd_puts(tempstromstring);
+                  //lcd_putc('$');
+
                   //strcat(CurrentDataString,stromstring);
                   strcat(CurrentDataString,tempstromstring);
+                  
+                  //char* substr;
+                  //strncpy(substr, CurrentDataString+10, 10);
+                  //lcd_gotoxy(0,1);
+                  //lcd_puts(CurrentDataString);
+                  
+                  
                }
                
                
@@ -1484,6 +1504,8 @@ int main(void)
 			sendWebCount=0;
 		}
       
+      webstatus |= (1<<DATASEND);
+      
       // strom busy?
 		if (webstatus & (1<<DATASEND))
 		{
@@ -1493,17 +1515,13 @@ int main(void)
 			
 			// handle ping and wait for a tcp packet
 			
-         cli();
+         //cli();
 			
 			dat_p=packetloop_icmp_tcp(buf,enc28j60PacketReceive(BUFFER_SIZE, buf));
 			//dat_p=1;
 			
 			if(dat_p==0) // Kein Aufruf, eigene Daten senden an Homeserver
 			{
-            //lcd_gotoxy(10,1);
-            //lcd_puts(" TCP \0");
-            //lcd_puthex(start_web_client);
-            //lcd_puthex(sendWebCount);
             
             if ((start_web_client==1)) // In Ping_Calback gesetzt: Ping erhalten
             {
@@ -1531,9 +1549,6 @@ int main(void)
            if (webstatus & (1<<DATAOK) )
             {
                
-               //lcd_gotoxy(0,0);
-               //lcd_puts(CurrentDataString);
-               //lcd_putc('*');
                
               // start_web_client=2;
                //strcat("pw=Pong&strom=360\0",(char*)teststring);
@@ -1562,6 +1577,13 @@ int main(void)
             
             continue;
          } // dat_p=0
+         else
+         {
+            lcd_gotoxy(5,1);
+            lcd_puts("dat_p\0");
+            lcd_putint(cmd);
+
+         }
 			
          sei();
          
@@ -1573,10 +1595,6 @@ int main(void)
 			 // for possible status codes see:
 			 
 			 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-			 lcd_gotoxy(0,0);
-			 lcd_puts("*GET*\0");
-			 dat_p=http200ok();
-			 dat_p=fill_tcp_data_p(buf,dat_p,PSTR("<h1>HomeCentral 200 OK</h1>"));
 			 goto SENDTCP;
 			 }
 			 */
@@ -1584,8 +1602,10 @@ int main(void)
 			
 			if (strncmp("/ ",(char *)&(buf[dat_p+4]),2)==0) // Slash am Ende der URL, Status-Seite senden
 			{
-				lcd_gotoxy(12,1);
-				lcd_puts("+/+\0");
+            lcd_gotoxy(0,0);
+            lcd_puts("   \0");
+            lcd_gotoxy(0,0);
+            lcd_puts("+/+\0");
 				dat_p=http200ok(); // Header setzen
 				dat_p=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>200 OK</h1>"));
             dat_p=fill_tcp_data_p(buf,dat_p,PSTR("<h1>HomeCurrent 200 OK</h1>"));
@@ -1632,11 +1652,17 @@ int main(void)
 			//
          
 		SENDTCP:
-              OSZIHI;
-    //     www_server_reply(buf,dat_p); // send data
+         OSZIHI;
+         www_server_reply(buf,dat_p); // send data
 			
 			
 		} // strom not busy
+      else
+      {
+         lcd_gotoxy(5,0);
+         lcd_puts("busy\0");
+
+      }
 	}
 	return (0);
 }
