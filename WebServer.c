@@ -65,7 +65,7 @@
 #define WDTBIT             7
 #define TASTATURPIN			0           //	Eingang fuer Tastatur
 #define ECHOPIN            5           //	Ausgang fuer Impulsanzeige
-
+#define ANALOGPIN 6
 #define MASTERCONTROLPIN	4           // Eingang fuer MasterControl: Meldung MasterReset
 
 #define INT0PIN            2           // Pin Int0
@@ -145,8 +145,8 @@ static volatile uint8_t send_cmd=0;
 volatile uint16_t                   wattstunden=0;
 volatile uint16_t                   kilowattstunden=0;
 
-volatile float leistung =0;
-float lastleistung =0;
+volatile float leistung =1;
+float lastleistung =1;
 uint8_t lastcounter=0;
 volatile uint8_t  anzeigewert =0;
 
@@ -294,8 +294,6 @@ char *trimwhitespace(char *str)
    return str;
 }
 
-
-
 void timer0() // Analoganzeige Messinstrument
 {
 	//----------------------------------------------------
@@ -329,6 +327,8 @@ ISR(TIMER0_COMPA_vect)
    
   OCR0A = anzeigewert;
    //OCR0A++;
+  PORTD &= ~(1<<ANALOGPIN); //LO
+   
     
 }
 
@@ -338,11 +338,13 @@ ISR(TIMER0_OVF_vect)
    timer0counter++;
    if (timer0counter== TIMER0_SEKUNDENTAKT)
    {
+      OSZITOGG;
       sekundencounter++;
       timer0counter=0;
-      lcd_gotoxy(15,0);
-      lcd_putint(timer0counter);
+     // lcd_gotoxy(15,0);
+     // lcd_putint(timer0counter);
    }
+   PORTD |= (1<<ANALOGPIN);
 }
 
 
@@ -866,6 +868,10 @@ void master_init(void)
 	
 	DDRD |=(1<<ECHOPIN); //Pin 5 von Port D als Ausgang fuer Impuls-Echo
 	PORTD &= ~(1<<ECHOPIN); //LO
+   
+   DDRD |=(1<<ANALOGPIN);
+   PORTD &= ~(1<<ANALOGPIN); //LO
+
 	// Eventuell: PORTD5 verwenden, Relais auf Platine 
 	
 //  DDRD &=~(1<<INT0PIN); //Pin 2 von Port D als Eingang fuer Interrupt Impuls
@@ -1134,10 +1140,11 @@ int main(void)
    lcd_clr_line(0);
    while(1)
 	{
+      //n = rand() % 100 + 1;
 		sei();
 		//Blinkanzeige
 		loopcount0++;
-		if (loopcount0>=0x4FFF)
+		if (loopcount0>=0x0FFF)
 		{
 			loopcount0=0;
          
@@ -1162,17 +1169,17 @@ int main(void)
          
          
 			
-			if (loopcount1 >= 0x0FF)
+			if (loopcount1 >= 0x040)
 			{
 				
 				loopcount1 = 0;
 				//OSZITOGG;
 				LOOPLEDPORT ^= (1<<SENDLED);           // TWILED setzen, Warnung
-				webstatus |= (1<<DATALOOP);
+//				webstatus |= (1<<DATALOOP);
             //TWBR=0;
 				//lcdinit();
-            //lcd_gotoxy(16,1);
-            //lcd_putc('l');
+            lcd_gotoxy(0,0);
+            //lcd_putc('a');
 
 			}
 			else
@@ -1189,18 +1196,12 @@ int main(void)
 			LOOPLEDPORT ^=(1<<LOOPLED);
 		}
 		
-		//**	Beginn Start-Routinen Webserver	***********************
-		
-		
-		//**	Ende Start-Routinen	***********************
-		
-		
 		//**	Beginn Current-Routinen	***********************
 		
       if (currentstatus & (1<<IMPULSBIT)) // neuer Impuls angekommen
       {
          PORTD |=(1<<ECHOPIN);
-          
+         
          messungcounter ++;
          currentstatus++; // ein Wert mehr gemessen
          impulszeitsumme += impulszeit/ANZAHLWERTE;      // Wert aufsummieren
@@ -1255,9 +1256,10 @@ int main(void)
             //lcd_puts(filterstromstring);
          }
          
-          
+         
          if ((currentstatus & 0x0F) == ANZAHLWERTE)      // genuegend Werte
          {
+            
             lcd_gotoxy(19,0);
             lcd_putc(' ');
             //lcd_putc(' ');
@@ -1316,7 +1318,9 @@ int main(void)
             //lcd_puts(impstring);
             //lcd_putc(':');
             lcd_putint16(impulsmittelwert);
+            lcd_gotoxy(0,0);
             
+            lcd_putint(sendintervallzeit);
             /*
              Impulsdauer: impulsmittelwert * TIMERIMPULSDAUER (10us)
              Umrechnung auf ms: /1000
@@ -1327,19 +1331,19 @@ int main(void)
              */
             
             //     leistung = 0xFFFF/impulsmittelwert;
-            leistung = 360.0/impulsmittelwert*100000.0;
+            if (impulsmittelwert)
+            {
+               leistung = 360.0/impulsmittelwert*100000.0;// 480us
+            }
 
-            //leistung/=2;
-            // neuer Mittelwert: filtermittelwert
-//            leistung = 360.0/filtermittelwert*100000.0;
-
-            
-            //       leistung = 36000000.0/impulsmittelwert;
             //     Stromzaehler
             
-            wattstunden = impulscount/10;
+            wattstunden = impulscount/10; // 310us
             
+            
+            //OSZILO;
             /*
+            // ganze Anzeige 55 ms
              lcd_gotoxy(9,1);
              lcd_putint(wattstunden/1000);
              lcd_putc('.');
@@ -1347,9 +1351,13 @@ int main(void)
              lcd_putc('W');
              lcd_putc('h');
              */
+             //OSZIHI;
+             
             
             // dtostrf(leistung,5,0,stromstring); // fuehrt zu 'strom=++123' in URL fuer strom.pl. Funktionierte trotzdem
-            dtostrf(leistung,5,1,stromstring);
+            
+   //         dtostrf(leistung,5,1,stromstring); // 800us
+            
             
             //lcd_gotoxy(0,0);
             //lcd_putc('L');
@@ -1396,10 +1404,30 @@ int main(void)
             // if (paketcounter  >= ANZAHLPAKETE)
             if (webstatus & (1<<DATALOOP))
             {
-               webstatus &= ~(1<<DATALOOP);
                
+               webstatus &= ~(1<<DATALOOP);
+ 
+               uint16_t zufall = rand() % 0x0F + 1;;
+               
+               //lcd_putc(' ');
+               //lcd_putint12(zufall);
+               //leistung += zufall;
+
+               
+               
+               dtostrf(leistung,5,1,stromstring); // 800us
+
                paketcounter=0;
                
+               uint16_t tempmitte = 0;
+               for (i=0;i<4;i++)
+               {
+                  tempmitte+= stromimpulsmittelwertarray[i];
+               }
+               tempmitte/= 4;
+               lcd_gotoxy(14,0);
+               lcd_putc('m');
+               lcd_putint12(tempmitte);
                //         filtercount =0;
                
                //if (TEST)
@@ -1407,14 +1435,14 @@ int main(void)
                   //lcd_gotoxy(0,0);
                   //lcd_putint(messungcounter);
                   //lcd_putc(' ');
-                  /*
+                  //OSZILO;
                    lcd_gotoxy(9,1);
                    lcd_putint(wattstunden/1000);
                    lcd_putc('.');
                    lcd_putint3(wattstunden);
                    lcd_putc('W');
                    lcd_putc('h');
-                   */
+                   //OSZIHI;
                }
                
                if (!(webstatus & (1<<DATAPEND))) // wartet nicht auf callback
@@ -1467,17 +1495,18 @@ int main(void)
                //           lcd_putc('>');
                
                
-            }
+            } // if DATALOOP
             
             //anzeigewert = 0xFF/0x8000*leistung; // 0x8000/0x255 = 0x81
             
             //anzeigewert = leistung/0x81;
-            anzeigewert = leistung/0x40;
             
-            if (TEST)
+            anzeigewert = leistung /0x18;
+            
+           // if (TEST)
             {
-               //lcd_gotoxy(9,0);
-               //lcd_putint(anzeigewert);
+               lcd_gotoxy(9,0);
+               lcd_putint(anzeigewert);
             }
             
             webstatus |= (1<<CURRENTSEND);
@@ -1490,10 +1519,11 @@ int main(void)
             
          }
          
+         PORTD &= ~(1<<ECHOPIN);
          impulszeit=0;
          currentstatus &= ~(1<<IMPULSBIT);
          
-         PORTD &= ~(1<<ECHOPIN);
+         
       }
 		//**    End Current-Routinen*************************
 		
@@ -1521,7 +1551,7 @@ int main(void)
 			//dat_p=1;
 			
 			if(dat_p==0) // Kein Aufruf, eigene Daten senden an Homeserver
-			{
+         {
             
             if ((start_web_client==1)) // In Ping_Calback gesetzt: Ping erhalten
             {
@@ -1545,14 +1575,14 @@ int main(void)
                
             }
             
-           //if (sendWebCount == 2) // StromDaten an HomeServer schicken
-           if (webstatus & (1<<DATAOK) )
+            //if (sendWebCount == 2) // StromDaten an HomeServer schicken
+            if (webstatus & (1<<DATAOK) )
             {
+               OSZILO;
                
-               
-              // start_web_client=2;
+               // start_web_client=2;
                //strcat("pw=Pong&strom=360\0",(char*)teststring);
-
+               
                
                start_web_client=0; // ping wieder ermoeglichen
                
@@ -1569,19 +1599,20 @@ int main(void)
                
                lcd_gotoxy(19,0);
                lcd_putc('>');
-
+               
                // Daten senden
                //www_server_reply(buf,dat_p); // send data
                
+               OSZIHI;
             }
             
             continue;
          } // dat_p=0
          else
          {
-            lcd_gotoxy(5,1);
-            lcd_puts("dat_p\0");
-            lcd_putint(cmd);
+           // lcd_gotoxy(5,1);
+            //lcd_puts("dat_p\0");
+           // lcd_putint(cmd);
 
          }
 			
@@ -1652,7 +1683,7 @@ int main(void)
 			//
          
 		SENDTCP:
-         OSZIHI;
+         //OSZIHI;
          www_server_reply(buf,dat_p); // send data
 			
 			

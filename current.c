@@ -4,7 +4,7 @@
  
 // current
 volatile static uint32_t             currentcount=0;     // Anzahl steps von timer2 zwischen 2 Impulsen. Schritt 10uS
-volatile uint32_t                     impulscount=0;     // Anzahl Impulse vom Stromzaehler fortlaufend
+volatile uint32_t                    impulscount=0;     // Anzahl Impulse vom Stromzaehler fortlaufend
 
 
 volatile static uint32_t            impulszeit=0;  // anzahl steps in INT1, wird nach div durch ANZAHLWERTE zu impulszeitsumme addiert.uebernommen
@@ -41,13 +41,21 @@ volatile uint8_t messungcounter;
 // Impulszaehler
 #define INTERVALL 100000 // 100ms Intervall fuer das Zaehlen der Impulse, 36 mWh
 // Zaehlen der Impulse bei hoher frequenz
+
 volatile static uint32_t intervallzeit=0; // in ISR von timer2 gezaehlt
+
+
+volatile static uint32_t sendintervallzeit=0; // in ISR  gezaehlt, Intervall fuer Send Data
 
 volatile uint16_t stromimpulscounter= 0; // Anz Stromimpulse im Intervall
 
-volatile static uint32_t anzahlimpulsmittelwerte=0;
+volatile static uint32_t anzahlimpulsmittelwert=0;
 
+//#define SENDINTERVALLCOUNT 60 // 1min
 
+#define SENDINTERVALLCOUNT 20 // 20s
+
+#define SENDINTERVALL 1* SENDINTERVALLCOUNT//
 
 
 // mittelwerte aufsummiert
@@ -74,6 +82,10 @@ volatile uint8_t stromimpulsindex=0;
 #define  CALLBACKERR                0
 
 //volatile uint8_t timer2startwert=TIMER2_ENDWERT;
+
+
+#define DATALOOP                    7     // wird von loopcount1 gesetzt, startet senden
+
 
 // SPI
 
@@ -133,7 +145,7 @@ void timer2(void) // Takt fuer Strommessung
 
 ISR(TIMER2_COMPA_vect) // CTC Timer2
 {
-   OSZITOGG;
+   //OSZITOGG;
    currentcount++; // Zaehlimpuls
    //PORTB ^= (1<<0);
    
@@ -141,13 +153,22 @@ ISR(TIMER2_COMPA_vect) // CTC Timer2
    // Zeitfenster fuer Impulszaehlung bei hohen Frequenzen 100 ms
    // Zeit messen fuer Intervall
    intervallzeit++;
-   if (intervallzeit == INTERVALL) // Messintervall abgelaufen, Anzahl zu schleppenden Mittelwert anfuegen
+   if (intervallzeit == INTERVALL) // 100ms Messintervall abgelaufen, Anzahl zum schleppenden Mittelwert anfuegen. 
    {
       intervallzeit = 0;
       stromimpulsmittelwertarray[stromimpulsindex++] = stromimpulscounter;
       stromimpulscounter=0;
       stromimpulsindex &= 0x03; // <4
+      
+      sendintervallzeit++; // intervall fuer send data
+
+      if (sendintervallzeit == SENDINTERVALL)
+      {
+         sendintervallzeit=0;
+         webstatus |= (1<<DATALOOP);
+      }
    }
+   
 
 }
 
