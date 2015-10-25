@@ -179,7 +179,7 @@ static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
 // how did I get the mac addr? Translate the first 3 numbers into ascii is: TUX
 // This web server's own IP.
 
-// IP des Webservers 
+// IP des Webservers
 static uint8_t myip[4] = {192,168,1,215};
 
 // IP address of the web server to contact (IP of the first portion of the URL):
@@ -707,59 +707,59 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
 	}//ack
 	
 	if (strncmp("twi",str,3)==0)										//	Daten von HC beginnen mit "twi"	
-	{
-		//lcd_clr_line(1);
-		//lcd_gotoxy(17,0);
-		//lcd_puts("twi\0");
-		
-		// Wert des Passwortes eruieren
-		if (find_key_val(str,actionbuf,10,"pw"))					//	Passwort kommt an zweiter Stelle
-		{		
-			urldecode(actionbuf);
-			webtaskflag=0;
-			//lcd_puts(actionbuf);
-			// Passwort kontrollieren
-			
-			
-			if (verify_password(actionbuf))							// Passwort ist OK
-			{
-				//OSZILO;
-				if (find_key_val(str,actionbuf,10,"status"))		// Status soll umgeschaltet werden
-				{
+   {
+      //lcd_clr_line(1);
+      //lcd_gotoxy(17,0);
+      //lcd_puts("twi\0");
+      
+      // Wert des Passwortes eruieren
+      if (find_key_val(str,actionbuf,10,"pw"))					//	Passwort kommt an zweiter Stelle
+      {
+         urldecode(actionbuf);
+         webtaskflag=0;
+         //lcd_puts(actionbuf);
+         // Passwort kontrollieren
+         
+         
+         if (verify_password(actionbuf))							// Passwort ist OK
+         {
+            //OSZILO;
+            if (find_key_val(str,actionbuf,10,"status"))		// Status soll umgeschaltet werden
+            {
                return 1;
-				}//st
-				
-				
-				
-				
-				
-				// Daten fuer EEPROM von Homeserver empfangen
-				
-				if (find_key_val(str,actionbuf,10,"wadr"))			// EEPROM-Daten werden von Homeserver gesendet
-				{
-						return (9);												// Empfang bestätigen
-				} // wadr
-				
-				if (find_key_val(str,actionbuf,10,"iswriteok"))		// Anfrage ob writeok
-				{
-                    
-					return (7);
-				}
-                
-				if (find_key_val(str,actionbuf,12,"isstat0ok"))		// Anfrage ob statusok isstat0ok
-				{
-					return (10);
-				}
-				
-                if (find_key_val(str,actionbuf,10,"reset")) // HomeCentral reseten
-                {
-                    
-                }	
-				
-			}//verify pw
-		}//find_key pw
-		return(0);
-	}//twi
+            }//st
+            
+            
+            
+            
+            
+            // Daten fuer EEPROM von Homeserver empfangen
+            
+            if (find_key_val(str,actionbuf,10,"wadr"))			// EEPROM-Daten werden von Homeserver gesendet
+            {
+               return (9);												// Empfang bestätigen
+            } // wadr
+            
+            if (find_key_val(str,actionbuf,10,"iswriteok"))		// Anfrage ob writeok
+            {
+               
+               return (7);
+            }
+            
+            if (find_key_val(str,actionbuf,12,"isstat0ok"))		// Anfrage ob statusok isstat0ok
+            {
+               return (10);
+            }
+            
+            if (find_key_val(str,actionbuf,10,"reset")) // HomeCentral reseten
+            {
+               
+            }
+            
+         }//verify pw
+      }//find_key pw
+      return(0);
+   }//twi
     
 	
     
@@ -798,10 +798,10 @@ uint16_t print_webpage_status(uint8_t *buf)
 	//
 	
 	//
-	plen=fill_tcp_data_p(buf,plen,PSTR("<p>  HomeCurrent<br>  Falkenstrasse 20<br>  8630 Rueti"));
+      plen=fill_tcp_data_p(buf,plen,PSTR("<p>  HomeCurrent<br>  Falkenstrasse 20<br>  8630 Rueti"));
 	plen=fill_tcp_data_p(buf,plen,PSTR("<hr><h4><font color=\"#00FF00\">Status</h4></font></p>"));
-	
-	
+   
+   
 	//return(plen);
 	
 	
@@ -1020,7 +1020,11 @@ uint8_t i=0;
 #pragma mark main
 int main(void)
 {
-	
+   if (TEST)
+   {
+      myip[3] = 216;
+   }
+
 	/* ************************************************************************ */
 	/* Eigene Main														*/
 	/* ************************************************************************ */
@@ -1610,6 +1614,8 @@ int main(void)
          } // dat_p=0
          else
          {
+            
+            
            // lcd_gotoxy(5,1);
             //lcd_puts("dat_p\0");
            // lcd_putint(cmd);
@@ -1639,7 +1645,14 @@ int main(void)
             lcd_puts("+/+\0");
 				dat_p=http200ok(); // Header setzen
 				dat_p=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>200 OK</h1>"));
-            dat_p=fill_tcp_data_p(buf,dat_p,PSTR("<h1>HomeCurrent 200 OK</h1>"));
+            if (TEST)
+            {
+               dat_p=fill_tcp_data_p(buf,dat_p,PSTR("<h1>HomeCurrent Test 200 OK</h1>"));
+            }
+            else
+            {
+               dat_p=fill_tcp_data_p(buf,dat_p,PSTR("<h1>HomeCurrent 200 OK</h1>"));
+            }
 				dat_p=print_webpage_status(buf);
 				goto SENDTCP;
 			}
@@ -1666,7 +1679,15 @@ int main(void)
 				{
                                                                                  #pragma mark cmd 2
 				}
-				
+
+            else if (cmd == 25)	// Data lesen
+            {
+                                                                                 #pragma mark cmd 25
+               dat_p=http200ok(); // Header setzen
+               dat_p=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>200 OK</h1>"));
+               dat_p = print_webpage_data(buf,(void*)"data\0");
+            }
+
 				else
 				{
 					dat_p=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 401 Unauthorized\r\nContent-Type: text/html\r\n\r\n<h1>401 Zugriff verweigert</h1>"));
