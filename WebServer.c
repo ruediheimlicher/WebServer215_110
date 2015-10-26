@@ -216,7 +216,7 @@ static uint8_t gwip[4] = {192,168,1,1};// Rueti
 static char urlvarstr[21];
 // listen port for tcp/www:
 #define MYWWWPORT 1401
-//
+#define MYWWWTESTPORT 1414
 
 #define BUFFER_SIZE 800
 
@@ -1153,7 +1153,15 @@ int main(void)
 	//PORTD &=~(1<<PD0);;
 	
 	//init the web server ethernet/ip layer:
-	init_ip_arp_udp_tcp(mymac,myip,MYWWWPORT);
+   
+   if (TEST)
+   {
+      init_ip_arp_udp_tcp(mymac,myip,MYWWWTESTPORT);
+   }
+   else
+   {
+      init_ip_arp_udp_tcp(mymac,myip,MYWWWPORT);
+   }
    
 	// init the web client:
 	client_set_gwip(gwip);  // e.g internal IP of dsl router
