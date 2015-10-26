@@ -32,6 +32,7 @@
 //									*
 //***********************************
 //
+
 //									*
 //***********************************
 
@@ -144,6 +145,7 @@ static volatile uint8_t send_cmd=0;
 
 volatile uint16_t                   wattstunden=0;
 volatile uint16_t                   kilowattstunden=0;
+volatile uint32_t                   webleistung=0;
 
 volatile float leistung =1;
 float lastleistung =1;
@@ -173,7 +175,7 @@ void lcd_put_tempAbMinus20(uint16_t temperatur);
 //static uint8_t mymac[6] = {0x54,0x55,0x58,0x10,0x00,0x29};
 
 //RH4702 52 48 34 37 30 33
-static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
+static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x49};
 //static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x99};
 
 // how did I get the mac addr? Translate the first 3 numbers into ascii is: TUX
@@ -182,12 +184,10 @@ static uint8_t mymac[6] = {0x52,0x48,0x34,0x37,0x30,0x33};
 // IP des Webservers
 static uint8_t myip[4] = {192,168,1,215};
 
+
+
 // IP address of the web server to contact (IP of the first portion of the URL):
 //static uint8_t websrvip[4] = {77,37,2,152};
-
-
-
-
 // ruediheimlicher
 //static uint8_t websrvip[4] = {213,188,35,156}; //213,188,35,156 30.7.2014 msh
 
@@ -695,8 +695,9 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
 			// Passwort kontrollieren
 			if (verify_password(actionbuf))
 			{
-				if (find_key_val(str,actionbuf,10,"tst"))
+				if (find_key_val(str,actionbuf,10,"data"))
 				{
+               
 					return(16);
 				}
 			}
@@ -756,6 +757,21 @@ uint8_t analyse_get_url(char *str)	// codesnippet von Watchdog
                
             }
             
+            // Auslesen der Daten
+            if (find_key_val(str,actionbuf,10,"data")) // HomeCentral reseten
+            {
+               if (actionbuf[0]=='0') // data
+               {
+                  return (25);
+               }
+               if (actionbuf[0]=='1') // data
+               {
+                  return (26);
+               }
+
+            }
+           
+            
          }//verify pw
       }//find_key pw
       return(0);
@@ -798,13 +814,20 @@ uint16_t print_webpage_status(uint8_t *buf)
 	//
 	
 	//
+   if (TEST)
+   {
+      plen=fill_tcp_data_p(buf,plen,PSTR("<p>  HomeCurrent Test<br>  Falkenstrasse 20<br>  8630 Rueti"));
+   }
+   else
+   {
       plen=fill_tcp_data_p(buf,plen,PSTR("<p>  HomeCurrent<br>  Falkenstrasse 20<br>  8630 Rueti"));
+   }
+   
+   
 	plen=fill_tcp_data_p(buf,plen,PSTR("<hr><h4><font color=\"#00FF00\">Status</h4></font></p>"));
-   
-   
+	
+	
 	//return(plen);
-	
-	
 	plen=fill_tcp_data_p(buf,plen,PSTR("<p>Leistung: "));
 	
 	//Temperatur=WebRxDaten[2];
@@ -815,6 +838,7 @@ uint16_t print_webpage_status(uint8_t *buf)
 	//r_itoa(Temperatur,TemperaturStringV);
 	
    plen=fill_tcp_data(buf,plen,stromstring);
+   
    plen=fill_tcp_data_p(buf,plen,PSTR(" Watt</p>"));
 
 	   
@@ -857,6 +881,20 @@ uint16_t print_webpage_status(uint8_t *buf)
 	 */
 	return(plen);
 }
+
+uint16_t print_webpage_data(uint8_t *buf,uint8_t *data)
+{
+   // Schickt die Daten an den cronjob
+   uint16_t plen;
+   plen=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nPragma: no-cache\r\n\r\n"));
+   //plen=fill_tcp_data_p(buf,plen,PSTR("<p>data="));
+   plen=fill_tcp_data(buf,plen,(void*)data);
+   
+    plen=fill_tcp_data(buf,plen,(void*)data);
+   
+   return plen;
+}
+
 
 void master_init(void)
 {
@@ -1338,6 +1376,8 @@ int main(void)
             if (impulsmittelwert)
             {
                leistung = 360.0/impulsmittelwert*100000.0;// 480us
+               webleistung = (uint32_t)360.0/impulsmittelwert*1000000.0;
+
             }
 
             //     Stromzaehler
@@ -1419,8 +1459,10 @@ int main(void)
 
                
                
-               dtostrf(leistung,5,1,stromstring); // 800us
+               //dtostrf(leistung,5,1,stromstring); // 800us
+               dtostrf(webleistung,10,0,stromstring); // 800us
 
+               
                paketcounter=0;
                
                uint16_t tempmitte = 0;
@@ -1461,7 +1503,9 @@ int main(void)
                   strcat(CurrentDataString,"&strom=\0");
                   char webstromstring[16]={};
                   
-                  urlencode(stromstring,webstromstring);
+            //      urlencode(stromstring,webstromstring);
+                  
+                  strcpy(webstromstring,stromstring);
                   //lcd_gotoxy(0,0);
                   //lcd_puts(stromstring);
                   //lcd_putc('-');
@@ -1594,8 +1638,6 @@ int main(void)
                
                client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),CurrentDataString,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
                
-               //client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),teststring,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
-               
                sendWebCount++;
                
                webstatus &= ~(1<<DATAOK); // client_browse nur einmal
@@ -1685,7 +1727,7 @@ int main(void)
                                                                                  #pragma mark cmd 25
                dat_p=http200ok(); // Header setzen
                dat_p=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>200 OK</h1>"));
-               dat_p = print_webpage_data(buf,(void*)"data\0");
+               dat_p = print_webpage_data(buf,(void*)CurrentDataString); // pw=Pong&strom=1234
             }
 
 				else
