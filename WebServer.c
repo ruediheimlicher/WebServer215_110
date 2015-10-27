@@ -885,12 +885,10 @@ uint16_t print_webpage_status(uint8_t *buf)
 uint16_t print_webpage_data(uint8_t *buf,uint8_t *data)
 {
    // Schickt die Daten an den cronjob
-   uint16_t plen;
+   uint16_t plen=0;
    plen=fill_tcp_data_p(buf,0,PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nPragma: no-cache\r\n\r\n"));
    //plen=fill_tcp_data_p(buf,plen,PSTR("<p>data="));
    plen=fill_tcp_data(buf,plen,(void*)data);
-   
-    plen=fill_tcp_data(buf,plen,(void*)data);
    
    return plen;
 }
@@ -1228,7 +1226,7 @@ int main(void)
 //				webstatus |= (1<<DATALOOP);
             //TWBR=0;
 				//lcdinit();
-            lcd_gotoxy(0,0);
+            //lcd_gotoxy(0,0);
             //lcd_putc('a');
 
 			}
@@ -1367,8 +1365,8 @@ int main(void)
             lcd_gotoxy(0,1);
             //lcd_puts(impstring);
             //lcd_putc(':');
-            lcd_putint16(impulsmittelwert);
-            lcd_gotoxy(0,0);
+             lcd_putint16(impulsmittelwert);
+            lcd_gotoxy(10,0);
             
             lcd_putint(sendintervallzeit);
             /*
@@ -1385,6 +1383,8 @@ int main(void)
             {
                leistung = 360.0/impulsmittelwert*100000.0;// 480us
                webleistung = (uint32_t)360.0/impulsmittelwert*1000000.0;
+               lcd_gotoxy(0,0);
+               lcd_putint16(webleistung);
 
             }
 
@@ -1490,12 +1490,15 @@ int main(void)
                   //lcd_putint(messungcounter);
                   //lcd_putc(' ');
                   //OSZILO;
+                  
+                  
                    lcd_gotoxy(9,1);
                    lcd_putint(wattstunden/1000);
                    lcd_putc('.');
                    lcd_putint3(wattstunden);
                    lcd_putc('W');
                    lcd_putc('h');
+                   
                    //OSZIHI;
                }
                
@@ -1527,12 +1530,15 @@ int main(void)
                   //strcat(CurrentDataString,stromstring);
                   strcat(CurrentDataString,tempstromstring);
                   
-                  //char* substr;
-                  //strncpy(substr, CurrentDataString+10, 10);
-                  //lcd_gotoxy(0,1);
-                  //lcd_puts(CurrentDataString);
-                  
-                  
+                  /*
+                   // kontolle
+                  char substr[20];
+                  uint8_t l=strlen(CurrentDataString);
+                  strncpy(substr, CurrentDataString+8, (l));
+                  lcd_gotoxy(0,1);
+                  lcd_puts(substr);
+                  _delay_ms(10);
+                  */
                }
                
                
