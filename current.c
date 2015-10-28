@@ -26,7 +26,7 @@ volatile uint8_t                    sendWebCount=0;	// Zahler fuer Anzahl TWI-Ev
 volatile uint8_t messungcounter;
 
 
-#define TEST   1
+#define TEST   0
 
 // Endwert fuer Compare-Match von Timer2
 #define TIMER2_ENDWERT					 125; // 10 us

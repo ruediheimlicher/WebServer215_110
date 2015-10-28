@@ -1650,7 +1650,7 @@ int main(void)
                
                // Daten an strom.pl schicken
                
-               client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),CurrentDataString,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
+ //              client_browse_url((char*)PSTR("/cgi-bin/strom.pl?"),CurrentDataString,(char*)PSTR(WEBSERVER_VHOST),&strom_browserresult_callback);
                
                sendWebCount++;
                
