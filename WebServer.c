@@ -1145,7 +1145,9 @@ int main(void)
 	//
 	// 0x476 is PHLCON LEDA=links status, LEDB=receive/transmit
 	// enc28j60PhyWrite(PHLCON,0b0000 0100 0111 01 10);
-	enc28j60PhyWrite(PHLCON,0x476);
+	
+   
+   enc28j60PhyWrite(PHLCON,0x476);
 	
 	//DDRB|= (1<<DDB1); // LED, enable PB1, LED as output
 	//PORTD &=~(1<<PD0);;
